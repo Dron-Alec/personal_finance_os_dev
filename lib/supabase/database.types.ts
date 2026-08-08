@@ -51,6 +51,33 @@ export interface Database {
         };
         Relationships: [];
       };
+      account_templates: {
+        Row: {
+          id: number;
+          user_id: string;
+          name: string;
+          type: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id?: string;
+          name: string;
+          type: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          user_id?: string;
+          name?: string;
+          type?: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       account_balance_history: {
         Row: {
           id: number;

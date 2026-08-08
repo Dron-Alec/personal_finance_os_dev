@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { STANDARD_ACCOUNTS } from "@/lib/constants";
 
 export type SaveBalancesResult = { error: string } | { error?: undefined; totalNetWorth?: number };
 
@@ -39,28 +38,45 @@ export async function saveMonthlyBalances(
     });
   }
 
+  const templateBalances = new Map<number, number>();
   for (const [key, value] of formData.entries()) {
-    if (!key.startsWith("standard_")) continue;
-    const index = Number(key.slice("standard_".length));
+    if (!key.startsWith("template_")) continue;
+    const templateId = Number(key.slice("template_".length));
     const balance = Number(value);
-    if (!Number.isFinite(index) || !Number.isFinite(balance) || balance === 0) continue;
-    const standard = STANDARD_ACCOUNTS[index];
-    if (!standard) continue;
-    const [name, type] = standard;
+    if (!Number.isFinite(templateId) || !Number.isFinite(balance) || balance === 0) continue;
+    templateBalances.set(templateId, balance);
+  }
 
-    const { data: account, error } = await supabase
-      .from("accounts")
-      .insert({ user_id: user.id, name, type, balance, as_of_date: entryDate })
-      .select("id")
-      .single();
-    if (error) return { error: error.message };
+  if (templateBalances.size > 0) {
+    const { data: templates } = await supabase
+      .from("account_templates")
+      .select("id, name, type")
+      .in("id", Array.from(templateBalances.keys()));
 
-    await supabase.from("account_balance_history").insert({
-      account_id: account.id,
-      user_id: user.id,
-      balance,
-      as_of_date: entryDate,
-    });
+    for (const template of templates ?? []) {
+      const balance = templateBalances.get(template.id);
+      if (balance === undefined) continue;
+
+      const { data: account, error } = await supabase
+        .from("accounts")
+        .insert({
+          user_id: user.id,
+          name: template.name,
+          type: template.type,
+          balance,
+          as_of_date: entryDate,
+        })
+        .select("id")
+        .single();
+      if (error) return { error: error.message };
+
+      await supabase.from("account_balance_history").insert({
+        account_id: account.id,
+        user_id: user.id,
+        balance,
+        as_of_date: entryDate,
+      });
+    }
   }
 
   const { data: accounts } = await supabase.from("accounts").select("balance");

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { saveAccount } from "@/lib/actions/accounts";
 import { ACCOUNT_TYPES } from "@/lib/constants";
 import { toDateInputValue } from "@/lib/date-utils";
+import { AccountTypeSelect } from "@/components/accounts/account-type-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,7 @@ export type AccountOption = { id: number; name: string; type: string; balance: n
 
 export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
   const [selected, setSelected] = useState<string>(accounts.length ? String(accounts[0].id) : ADD_NEW);
+  const [type, setType] = useState<string>(ACCOUNT_TYPES[0]);
   const [state, formAction, pending] = useActionState(saveAccount, {});
   const formRef = useRef<HTMLFormElement>(null);
   const prevPending = useRef(pending);
@@ -71,18 +73,7 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="acct-type">Type</Label>
-              <select
-                id="acct-type"
-                name="type"
-                className="border-input h-9 rounded-md border bg-transparent px-3 text-sm"
-                defaultValue={ACCOUNT_TYPES[0]}
-              >
-                {ACCOUNT_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+              <AccountTypeSelect id="acct-type" name="type" value={type} onChange={setType} />
             </div>
           </>
         ) : (

@@ -29,19 +29,6 @@ export const BANK_FORMATS = [
 
 export type BankFormat = (typeof BANK_FORMATS)[number];
 
-// Standard account checklist offered during month-end backfill entry for
-// accounts the user hasn't set up yet. [name, type]
-export const STANDARD_ACCOUNTS: [string, AccountType][] = [
-  ["Citi Checking", "Checking"],
-  ["Axos Checking", "Checking"],
-  ["Axos Savings", "Savings"],
-  ["Coinbase", "Crypto"],
-  ["Roth 401k", "401k"],
-  ["Roth IRA", "Roth IRA"],
-  ["Taxable Brokerage", "Brokerage / Stocks"],
-  ["Other Investments", "Other"],
-];
-
 export const SPENDING_EXCLUDE_CATEGORIES = new Set(["Internal Transfer", "Income"]);
 
 export type CategoryRule = { category: string; keywords: string[] };

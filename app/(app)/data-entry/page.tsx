@@ -8,12 +8,13 @@ import { Separator } from "@/components/ui/separator";
 export default async function DataEntryPage() {
   const supabase = await createClient();
 
-  const [{ data: accounts }, { data: transactions }] = await Promise.all([
+  const [{ data: accounts }, { data: transactions }, { data: templates }] = await Promise.all([
     supabase.from("accounts").select("id, name, balance").order("name"),
     supabase
       .from("transactions")
       .select("id, date, description, amount, bank, category")
       .order("date", { ascending: false }),
+    supabase.from("account_templates").select("id, name, type").order("sort_order"),
   ]);
 
   return (
@@ -27,7 +28,7 @@ export default async function DataEntryPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <BalanceEntryForm accounts={accounts ?? []} />
+          <BalanceEntryForm accounts={accounts ?? []} templates={templates ?? []} />
         </CardContent>
       </Card>
 

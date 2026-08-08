@@ -55,21 +55,37 @@ started fresh) — re-enter it via Data Entry once each account exists.
 ## Data entry workflow
 - **Month-end balances** → Data Entry tab → updates accounts + creates net worth snapshot
 - **Spending** → Data Entry tab → upload CSV statements as they arrive
+- The month-end form's "Suggested accounts" checklist is backed by the
+  `account_templates` table, not a hardcoded list — each suggestion has an
+  ✕ (with confirm) to remove it, and there's an inline "Add a suggested
+  account" control (name + searchable type dropdown) to add your own.
+  Removing/adding a suggestion only edits the checklist; it doesn't touch
+  real `accounts` rows. Account `type` fields (here and on the Accounts tab)
+  use a searchable combobox (`components/accounts/account-type-select.tsx`)
+  over the fixed `ACCOUNT_TYPES` catalog — "Other" is the existing catch-all
+  type, not freeform text.
 
 ## Supabase
-- New project (separate from the old Streamlit-era `AlecHaleyFinances` /
-  `lfqezqcymxcdseqcsbfh` project, which is no longer used).
-- Schema lives in `supabase/migrations/` — apply `0001_init.sql` then
-  `0002_seed_trigger.sql` to a fresh project.
-- Tables: `accounts`, `account_balance_history`, `transactions`,
-  `nw_snapshots`, `category_rules`, `nw_targets` — all scoped by `user_id`,
-  RLS enabled + forced on every table.
+- Live project: **Personal_Finances_OS** (ref `ycvxvdtigwkjpwgoiqhz`, region
+  ca-central-1) — separate from the old Streamlit-era `AlecHaleyFinances` /
+  `lfqezqcymxcdseqcsbfh` project, which is no longer used.
+- Schema lives in `supabase/migrations/`, applied in order: `0001_init.sql`,
+  `0002_seed_trigger.sql`, `0003_account_templates.sql`,
+  `0004_account_template_defaults.sql`. All four are already applied to the
+  live project — run them in order against any fresh project.
+- Tables: `accounts`, `account_balance_history`, `account_templates`,
+  `transactions`, `nw_snapshots`, `category_rules`, `nw_targets` — all
+  scoped by `user_id`, RLS enabled + forced on every table.
 - `accounts` has a unique constraint on `(user_id, name)`; account `type` is
   set at creation only — the app never updates it once created.
-- `handle_new_user()` trigger seeds `category_rules` and `nw_targets` for
-  every new signup (default keyword map + the historical target curve).
+  `account_templates` has the same `(user_id, name)` uniqueness but is
+  fully editable (it's just suggestions, not real balances).
+- `handle_new_user()` trigger seeds `category_rules`, `nw_targets`, and
+  `account_templates` for every new signup (default keyword map, the
+  historical target curve, and starter suggestions: Checking, Savings,
+  Coinbase/Crypto, 401k, Roth IRA, Taxable Brokerage, Other Investments).
 - Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (see
-  `.env.local.example`).
+  `.env.local.example`) — already set in `.env.local` for the live project.
 
 ## Statement formats supported
 Citi Checking, Citi Credit, Discover, Axos Checking, Axos Savings,

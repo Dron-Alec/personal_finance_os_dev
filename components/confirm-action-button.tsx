@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -25,7 +26,7 @@ export function ConfirmActionButton({
   variant = "destructive",
   size = "default",
 }: {
-  label: string;
+  label: ReactNode;
   title: string;
   description: string;
   confirmLabel?: string;
