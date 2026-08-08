@@ -11,16 +11,23 @@ export type SpendingTransaction = {
 
 export const ALL = "All";
 
-export type SpendingFilters = { month: string; category: string; bank: string };
+export type SpendingFilters = {
+  month: string;
+  category: string;
+  bank: string;
+  excludeCategories: string[];
+};
 
 export function applyFilters(
   transactions: SpendingTransaction[],
   filters: SpendingFilters,
 ): SpendingTransaction[] {
+  const excluded = new Set(filters.excludeCategories);
   return transactions.filter((t) => {
     if (filters.month !== ALL && t.date.slice(0, 7) !== filters.month) return false;
     if (filters.category !== ALL && t.category !== filters.category) return false;
     if (filters.bank !== ALL && t.bank !== filters.bank) return false;
+    if (excluded.has(t.category)) return false;
     return true;
   });
 }
