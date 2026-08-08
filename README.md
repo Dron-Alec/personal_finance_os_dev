@@ -1,6 +1,6 @@
 # Personal Finance OS
 
-A personal finance dashboard built with Streamlit. Track net worth over time, import bank/credit card statements, monitor spending by category, and manage account balances — all in one place.
+A personal finance dashboard built with Next.js and Supabase. Track net worth over time, import bank/credit card statements, monitor spending by category, and manage account balances — all in one place.
 
 ## Features
 
@@ -9,28 +9,52 @@ A personal finance dashboard built with Streamlit. Track net worth over time, im
 - **Net worth tracking** — snapshot-based history with a chart and quarterly targets
 - **Account balances** — track checking, savings, crypto, 401k, Roth IRA, taxable brokerage, and more
 - **Manual balance entry** — backfill missed months by entering all account balances for a specific date in one form
-- **Multi-person support** — separate views for Alec and Haley, plus a combined aggregated view
-- **Password-protected** — simple login gate to keep data private
+- **Private per-user data** — each account's data is isolated via Postgres Row Level Security; nobody else can see it
+- **Email/password + mandatory MFA** — every account enrolls a TOTP authenticator app right after signup
+
+## Stack
+
+Next.js (App Router, TypeScript) · Tailwind + shadcn/ui · Recharts · Supabase (Postgres, Auth) · deployed on Vercel.
 
 ## Setup
 
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
+1. Create a Supabase project.
+2. Apply the migrations in order via the Supabase SQL Editor or CLI:
+   ```bash
+   supabase/migrations/0001_init.sql
+   supabase/migrations/0002_seed_trigger.sql
+   ```
+3. Copy `.env.local.example` to `.env.local` and fill in your project's URL and anon key (Supabase dashboard → Project Settings → API).
+4. Install dependencies and run the dev server:
+   ```bash
+   npm install
+   npm run dev
+   ```
 
-The app runs locally at `http://localhost:8501`.
+The app runs locally at `http://localhost:3000`.
+
+## Deploying
+
+Connect the repo to Vercel and set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as project environment variables. No other configuration is required — there's no service-role key or server secret to manage.
 
 ## Data
 
-All data is stored locally in the `data/` directory as JSON files (`alec.json`, `haley.json`). Nothing is sent to any external service.
+All data lives in your Supabase project's Postgres database, scoped per-user via Row Level Security. Nothing is stored locally.
 
 ## Importing Transactions
 
 1. Export a CSV from your bank's website
-2. Go to **Import** tab → select the matching statement format → upload the file
-3. Duplicate transactions are automatically skipped on re-import
+2. Go to **Data Entry** → **Upload Statements** → select the matching statement format → upload the file(s)
+3. Duplicate transactions (same date, description, and amount) are automatically skipped on re-import
 
 ## Backfilling Missing Months
 
-Go to **Accounts → 📅 Manual Balance Entry**, pick the date (e.g. end of a past month), enter balances for each account, and click **Save Entry**. This creates a net worth snapshot for that date and optionally updates current account records.
+Go to **Data Entry** → **Month-End Balances**, pick the date (e.g. end of a past month), enter balances for each account, and click **Save Balances & Snapshot**. This updates account balances and records a net worth snapshot for that date.
+
+## Testing
+
+```bash
+npm test    # CSV parsing unit tests
+npm run lint
+npm run build
+```
