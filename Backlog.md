@@ -47,10 +47,25 @@
 - [ ] Keyword-based auto-categorization rules (existing feature — e.g. "trader joe" → Groceries)
 - [ ] Extend rule engine to new adapters/categories as they're added
 
+### Analytics — Net Worth & Spending
+- [ ] Aggregate net worth graph (all accounts combined, month-by-month, existing snapshot-based history)
+- [ ] Per-account drill-down: same graph type, filterable/selectable to a single account (e.g. just Savings, just Brokerage)
+- [ ] Spending pie chart with customizable categories (reads off the existing keyword-categorization rule engine — categories aren't fixed/hardcoded)
+- [ ] Bar/monthly breakdown views (existing feature) carried over and reconciled with new drill-down account filter
+
 ### Goals
 - [ ] Purpose-built (not generic form) goal widget: target amount + target date
+- [ ] Goal scoped to a specific account (not just aggregate net worth) — e.g. "$100k in Savings" tracks only the Savings account balance
 - [ ] Progress visualization: progress bar/ring, current vs. target, projected date at current rate
-- [ ] v1 scope: single goal type, driven off net worth or a specific account balance (extension of existing net worth snapshots/quarterly targets)
+- [ ] Variance view: how far actual balance is ahead/behind the pace needed to hit the goal by target date
+- [ ] v1 scope: single goal type, but selectable target — net worth (aggregate) OR a specific account balance (extension of existing net worth snapshots/quarterly targets)
+
+### Contribution Projection Chatbot
+- [ ] Conversational interface for describing a contribution strategy in plain English (e.g. "same amount every month," "increase contributions by X% per year for Y years")
+- [ ] Chatbot translates described strategy into month-by-month expected balance values
+- [ ] Projected values plotted alongside actual account/net-worth trajectory on the same graph (goal pace vs. real pace vs. hypothetical strategy)
+- [ ] Scoped to a specific account or goal (ties into per-account drill-down and goal variance view above)
+- [ ] First concrete instance of the "AI-native, talk to your data" differentiator — worth building with reusable prompt/interaction patterns since this is likely to expand to other conversational features later
 
 ### Account Types
 - [ ] Add "Money Market" as its own account type (distinct from Taxable Brokerage — reads as liquid/cash-equivalent, not invested risk capital)
@@ -107,7 +122,7 @@
 
 ### Future / Not Yet Scoped
 - [ ] Plaid integration as opt-in "auto-import mode" — kept alongside manual mode, not a replacement (possible premium-tier gate)
-- [ ] AI-native "talk to your data" interaction layer (differentiator vs. Monarch/Copilot's fixed dashboards) — worth scoping once core loop is validated
+- [ ] Broader AI-native "talk to your data" interaction layer beyond contribution projection (differentiator vs. Monarch/Copilot's fixed dashboards) — worth scoping once core loop is validated
 - [ ] Native iOS wrapper (Capacitor/React Native reusing web code) — only if push notifications or App Store distribution/trust becomes a real need
 - [ ] SOC 2 — only relevant if/when a bank-data integration (e.g. Plaid) puts the product in scope; not needed for manual-CSV-only model
 

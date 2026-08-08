@@ -1,6 +1,7 @@
 import Papa from "papaparse";
 import { format } from "date-fns";
 import type { BankFormat } from "@/lib/constants";
+import { parseLocalDate } from "@/lib/date-utils";
 
 export type ParsedTransaction = {
   date: string; // ISO yyyy-MM-dd
@@ -24,23 +25,6 @@ export function cleanVal(raw: unknown): number {
   if (["nan", "", "--", "none"].includes(s.toLowerCase())) return 0;
   const n = parseFloat(s);
   return Number.isNaN(n) ? 0 : n;
-}
-
-/**
- * `new Date("2026-07-01")` parses an ISO-shaped string as UTC midnight, but
- * `format()` then renders it in the server's local timezone — a server
- * behind UTC (any US timezone) rolls the date back a day. Slash-formatted
- * dates ("7/1/2026") don't have this problem — those parse as local time
- * already — so only the ISO shape needs the explicit local-components
- * constructor.
- */
-export function parseLocalDate(raw: string): Date {
-  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
-  if (isoMatch) {
-    const [, y, m, d] = isoMatch;
-    return new Date(Number(y), Number(m) - 1, Number(d));
-  }
-  return new Date(raw);
 }
 
 // Case-sensitive by design, matching the original Streamlit parser — bank

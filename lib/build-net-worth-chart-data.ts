@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { quarterToDate, toDateInputValue } from "@/lib/date-utils";
+import { parseLocalDate, quarterToDate, toDateInputValue } from "@/lib/date-utils";
 import type { NetWorthPoint } from "@/components/charts/net-worth-chart";
 
 type Snapshot = { date: string; net_worth: number };
@@ -14,7 +14,7 @@ export function buildNetWorthChartData(
   function getRow(date: string): NetWorthPoint {
     const existing = byDate.get(date);
     if (existing) return existing;
-    const row: NetWorthPoint = { date, label: format(new Date(date), "MMM yyyy"), netWorth: null, target: null };
+    const row: NetWorthPoint = { date, label: format(parseLocalDate(date), "MMM yyyy"), netWorth: null, target: null };
     byDate.set(date, row);
     return row;
   }

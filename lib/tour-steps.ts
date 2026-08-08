@@ -57,6 +57,20 @@ export const TOUR_STEPS: TourStep[] = [
     body: "Your net worth over time, with your quarterly target curve overlaid as a dashed line. Appears once you have at least one snapshot; edit targets in Settings.",
   },
   {
+    id: "goals",
+    path: "/net-worth",
+    target: "goals",
+    title: "Goals",
+    body: "Set a target amount and date, scoped to your overall net worth or a single account. Each goal shows a progress ring, whether you're ahead or behind the pace needed to hit it, and a projected completion date at your current rate.",
+  },
+  {
+    id: "account-overlay",
+    path: "/net-worth",
+    target: "account-overlay",
+    title: "Accounts Compared",
+    body: "Every account's balance over time on one chart, each colored to match its slice on the Accounts page — appears once at least one account has balance history.",
+  },
+  {
     id: "spending",
     path: "/spending",
     target: "spending-page",

@@ -54,6 +54,50 @@ export interface Database {
         };
         Relationships: [];
       };
+      goals: {
+        Row: {
+          id: number;
+          user_id: string;
+          name: string;
+          scope_type: string;
+          account_id: number | null;
+          starting_amount: number;
+          target_amount: number;
+          target_date: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id?: string;
+          name: string;
+          scope_type: string;
+          account_id?: number | null;
+          starting_amount?: number;
+          target_amount: number;
+          target_date: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          user_id?: string;
+          name?: string;
+          scope_type?: string;
+          account_id?: number | null;
+          starting_amount?: number;
+          target_amount?: number;
+          target_date?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "goals_account_id_fkey";
+            columns: ["account_id"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       account_templates: {
         Row: {
           id: number;

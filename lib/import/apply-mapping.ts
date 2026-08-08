@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import type { ColumnMapping } from "@/lib/import/csv-header-matcher";
-import { parseLocalDate } from "@/lib/csv-parsing";
+import { parseLocalDate } from "@/lib/date-utils";
 
 export type MappedTransaction = {
   date: string; // ISO yyyy-MM-dd

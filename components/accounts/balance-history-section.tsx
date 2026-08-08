@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { BalanceHistoryChart } from "@/components/charts/balance-history-chart";
 import { getAccountColor } from "@/lib/chart-colors";
+import { parseLocalDate } from "@/lib/date-utils";
 import {
   Select,
   SelectContent,
@@ -39,7 +40,7 @@ export function BalanceHistorySection({
 
   const chartData = rows.map((r) => ({
     date: r.as_of_date,
-    label: format(new Date(r.as_of_date), "MMM d, yyyy"),
+    label: format(parseLocalDate(r.as_of_date), "MMM d, yyyy"),
     balance: r.balance,
   }));
 
