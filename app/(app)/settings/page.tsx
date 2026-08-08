@@ -22,7 +22,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
+      <Card data-tour="category-rules">
         <CardHeader>
           <CardTitle>Category Rules</CardTitle>
           <CardDescription>
@@ -34,7 +34,7 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card data-tour="targets">
         <CardHeader>
           <CardTitle>Net Worth Targets</CardTitle>
           <CardDescription>Edit as CSV: quarter,target_net_worth</CardDescription>
@@ -44,7 +44,7 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-destructive/50">
+      <Card className="border-destructive/50" data-tour="danger-zone">
         <CardHeader>
           <CardTitle>Danger Zone</CardTitle>
         </CardHeader>

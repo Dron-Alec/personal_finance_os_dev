@@ -1,25 +1,32 @@
-// Validated categorical palette (light mode) — fixed hue order, never cycled.
-// See the dataviz skill's references/palette.md for the CVD-safety rationale
-// behind this exact order.
+// Validated categorical palette — fixed hue order, never cycled. Values are
+// CSS custom properties (defined for both light and dark in globals.css, per
+// the dataviz skill's references/palette.md) so every chart repaints on
+// theme toggle for free, with no JS/context involved: the browser resolves
+// var() in SVG fill/stroke attributes same as any other CSS property.
 export const CATEGORICAL_PALETTE = [
-  "#2a78d6", // 1 blue
-  "#eb6834", // 2 orange
-  "#1baf7a", // 3 aqua
-  "#eda100", // 4 yellow
-  "#e87ba4", // 5 magenta
-  "#008300", // 6 green
-  "#4a3aa7", // 7 violet
-  "#e34948", // 8 red
+  "var(--chart-series-1)", // blue
+  "var(--chart-series-2)", // orange
+  "var(--chart-series-3)", // aqua
+  "var(--chart-series-4)", // yellow
+  "var(--chart-series-5)", // magenta
+  "var(--chart-series-6)", // green
+  "var(--chart-series-7)", // violet
+  "var(--chart-series-8)", // red
 ] as const;
 
 // Overflow beyond 8 series folds into this shared muted tone rather than
 // cycling the categorical hues (each item stays its own labeled slice/bar —
 // only the fill color is shared).
-export const OTHER_COLOR = "#898781";
+export const OTHER_COLOR = "var(--chart-other)";
 
-export const TARGET_LINE_COLOR = "#898781"; // reference line, not a data series
-export const DELTA_GOOD_COLOR = "#006300";
-export const DELTA_BAD_COLOR = "#d03b3b";
+export const TARGET_LINE_COLOR = "var(--chart-target)"; // reference line, not a data series
+export const DELTA_GOOD_COLOR = "var(--chart-delta-good)";
+export const DELTA_BAD_COLOR = "var(--chart-delta-bad)";
+
+// Chart chrome — gridlines, axis ticks/labels, baseline — also theme-aware.
+export const GRID_COLOR = "var(--chart-grid)";
+export const AXIS_COLOR = "var(--chart-axis)";
+export const BASELINE_COLOR = "var(--chart-baseline)";
 
 // Fixed name -> slot assignment for the app's known spending categories, so
 // a category's color never changes as filters change which categories are

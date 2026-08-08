@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { BalanceHistoryChart } from "@/components/charts/balance-history-chart";
+import { getAccountColor } from "@/lib/chart-colors";
 import {
   Select,
   SelectContent,
@@ -24,6 +25,9 @@ export function BalanceHistorySection({
   history: HistoryRow[];
 }) {
   const [selectedId, setSelectedId] = useState<string>(accounts[0] ? String(accounts[0].id) : "");
+
+  const sortedIds = useMemo(() => accounts.map((a) => a.id).sort((a, b) => a - b), [accounts]);
+  const color = getAccountColor(Number(selectedId), sortedIds);
 
   const rows = useMemo(
     () =>
@@ -64,7 +68,7 @@ export function BalanceHistorySection({
         </p>
       ) : (
         <>
-          <BalanceHistoryChart data={chartData} />
+          <BalanceHistoryChart data={chartData} color={color} />
           <div className="max-h-64 overflow-auto rounded-md border">
             <Table>
               <TableHeader>

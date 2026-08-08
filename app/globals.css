@@ -81,6 +81,24 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Chart categorical palette — validated (dataviz skill), fixed hue order,
+     never cycled. Light column. */
+  --chart-series-1: #2a78d6; /* blue */
+  --chart-series-2: #eb6834; /* orange */
+  --chart-series-3: #1baf7a; /* aqua */
+  --chart-series-4: #eda100; /* yellow */
+  --chart-series-5: #e87ba4; /* magenta */
+  --chart-series-6: #008300; /* green */
+  --chart-series-7: #4a3aa7; /* violet */
+  --chart-series-8: #e34948; /* red */
+  --chart-other: #898781;
+  --chart-target: #898781;
+  --chart-delta-good: #006300;
+  --chart-delta-bad: #d03b3b;
+  --chart-grid: #e1e0d9;
+  --chart-axis: #898781;
+  --chart-baseline: #c3c2b7;
 }
 
 .dark {
@@ -115,6 +133,24 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Chart categorical palette — dark column, same 8 hues stepped for the
+     dark surface (not an automatic flip of the light values). */
+  --chart-series-1: #3987e5;
+  --chart-series-2: #d95926;
+  --chart-series-3: #199e70;
+  --chart-series-4: #c98500;
+  --chart-series-5: #d55181;
+  --chart-series-6: #008300;
+  --chart-series-7: #9085e9;
+  --chart-series-8: #e66767;
+  --chart-other: #898781;
+  --chart-target: #898781;
+  --chart-delta-good: #0ca30c;
+  --chart-delta-bad: #d03b3b;
+  --chart-grid: #2c2c2a;
+  --chart-axis: #898781;
+  --chart-baseline: #383835;
 }
 
 @layer base {

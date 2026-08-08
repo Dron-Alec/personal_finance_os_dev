@@ -23,7 +23,7 @@ export default async function NetWorthPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
+      <Card data-tour="snapshot-form">
         <CardHeader>
           <CardTitle>Add / Update Snapshot</CardTitle>
           <CardDescription>Manually record a net worth snapshot for any date.</CardDescription>
@@ -71,7 +71,7 @@ export default async function NetWorthPage() {
             )}
           </div>
 
-          <Card>
+          <Card data-tour="nw-chart">
             <CardContent>
               <NetWorthChart data={buildNetWorthChartData(sortedSnapshots, targets ?? [])} />
             </CardContent>

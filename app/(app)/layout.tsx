@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { signOut } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { ProductTour } from "@/components/product-tour";
 
 const NAV_ITEMS = [
   { href: "/data-entry", label: "📋 Data Entry" },
@@ -16,11 +18,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="border-b">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <h1 className="text-xl font-semibold">💰 Personal Finance OS</h1>
-          <form action={signOut}>
-            <Button type="submit" variant="outline" size="sm">
-              Logout
-            </Button>
-          </form>
+          <div className="flex items-center gap-2">
+            <ProductTour />
+            <ThemeToggle />
+            <form action={signOut}>
+              <Button type="submit" variant="outline" size="sm">
+                Logout
+              </Button>
+            </form>
+          </div>
         </div>
         <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2">
           {NAV_ITEMS.map((item) => (

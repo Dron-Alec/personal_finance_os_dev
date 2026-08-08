@@ -7,8 +7,9 @@ import {
   buildMonthlyCategoryData,
   computeSpendingMetrics,
 } from "@/lib/spending-utils";
-import { getCategoryColor } from "@/lib/chart-colors";
+import { DELTA_BAD_COLOR, DELTA_GOOD_COLOR, getCategoryColor } from "@/lib/chart-colors";
 import { formatCurrency, formatSignedCurrency } from "@/lib/format";
+import { CategorySwatch } from "@/components/category-swatch";
 import { SpendingFilters } from "@/components/spending/spending-filters";
 import { RecategorizePanel } from "@/components/spending/recategorize-panel";
 import { BreakdownPieChart } from "@/components/charts/breakdown-pie-chart";
@@ -34,7 +35,11 @@ export default async function SpendingPage({
 
   const all = transactions ?? [];
   if (all.length === 0) {
-    return <p className="text-muted-foreground">No transactions yet — import CSV statements first.</p>;
+    return (
+      <p className="text-muted-foreground" data-tour="spending-page">
+        No transactions yet — import CSV statements first.
+      </p>
+    );
   }
 
   const filters = {
@@ -65,7 +70,7 @@ export default async function SpendingPage({
   const sortedTable = [...filtered].sort((a, b) => (a.date < b.date ? 1 : -1));
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6" data-tour="spending-page">
       <SpendingFilters months={months} categories={dataCategories} banks={banks} />
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -84,7 +89,12 @@ export default async function SpendingPage({
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-normal text-muted-foreground">Net Cash Flow</CardTitle>
-            <p className="text-2xl font-semibold">{formatSignedCurrency(netCashFlow, 2)}</p>
+            <p
+              className="text-2xl font-semibold"
+              style={{ color: netCashFlow >= 0 ? DELTA_GOOD_COLOR : DELTA_BAD_COLOR }}
+            >
+              {formatSignedCurrency(netCashFlow, 2)}
+            </p>
           </CardHeader>
         </Card>
       </div>
@@ -133,7 +143,9 @@ export default async function SpendingPage({
                     <TableCell className="max-w-64 truncate">{t.description}</TableCell>
                     <TableCell className="text-right">{formatCurrency(t.amount, 2)}</TableCell>
                     <TableCell className="text-muted-foreground">{t.bank}</TableCell>
-                    <TableCell className="text-muted-foreground">{t.category}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <CategorySwatch category={t.category} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

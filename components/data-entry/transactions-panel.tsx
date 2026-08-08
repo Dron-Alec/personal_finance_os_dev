@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { CategorySwatch } from "@/components/category-swatch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/format";
 
@@ -61,7 +62,9 @@ export function TransactionsPanel({ transactions }: { transactions: TransactionR
                 <TableCell className="max-w-64 truncate">{t.description}</TableCell>
                 <TableCell className="text-right">{formatCurrency(t.amount, 2)}</TableCell>
                 <TableCell className="text-muted-foreground">{t.bank}</TableCell>
-                <TableCell className="text-muted-foreground">{t.category}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  <CategorySwatch category={t.category} />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

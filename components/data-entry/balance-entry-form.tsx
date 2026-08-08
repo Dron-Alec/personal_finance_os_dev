@@ -96,7 +96,7 @@ export function BalanceEntryForm({
       )}
 
       {missingTemplates.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2" data-tour="suggested-accounts">
           <p className="text-sm font-medium">
             Suggested accounts <span className="font-normal text-muted-foreground">(leave at 0 to skip)</span>
           </p>

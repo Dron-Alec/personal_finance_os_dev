@@ -38,7 +38,7 @@ export default async function AccountsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
+      <Card data-tour="account-form">
         <CardHeader>
           <CardTitle>Add / Update Account</CardTitle>
         </CardHeader>
@@ -53,7 +53,7 @@ export default async function AccountsPage() {
         </p>
       ) : (
         <>
-          <Card>
+          <Card data-tour="accounts-table">
             <CardHeader>
               <CardTitle>Total Account Value: {formatCurrency(total, 0)}</CardTitle>
             </CardHeader>
@@ -63,7 +63,7 @@ export default async function AccountsPage() {
           </Card>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
+            <Card data-tour="portfolio-breakdown">
               <CardHeader>
                 <CardTitle>Portfolio Breakdown</CardTitle>
               </CardHeader>
@@ -81,7 +81,7 @@ export default async function AccountsPage() {
             </Card>
           </div>
 
-          <Card>
+          <Card data-tour="balance-history">
             <CardHeader>
               <CardTitle>Balance History</CardTitle>
             </CardHeader>

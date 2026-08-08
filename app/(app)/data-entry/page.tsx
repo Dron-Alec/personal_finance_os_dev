@@ -19,7 +19,7 @@ export default async function DataEntryPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
+      <Card data-tour="balances-card">
         <CardHeader>
           <CardTitle>Month-End Balances</CardTitle>
           <CardDescription>
@@ -43,8 +43,12 @@ export default async function DataEntryPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
-          <CsvUploadForm />
-          <TransactionsPanel transactions={transactions ?? []} />
+          <div data-tour="csv-upload">
+            <CsvUploadForm />
+          </div>
+          <div data-tour="transactions-panel">
+            <TransactionsPanel transactions={transactions ?? []} />
+          </div>
         </CardContent>
       </Card>
     </div>
