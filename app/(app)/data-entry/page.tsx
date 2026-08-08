@@ -8,14 +8,20 @@ import { Separator } from "@/components/ui/separator";
 export default async function DataEntryPage() {
   const supabase = await createClient();
 
-  const [{ data: accounts }, { data: transactions }, { data: templates }] = await Promise.all([
-    supabase.from("accounts").select("id, name, balance").order("name"),
-    supabase
-      .from("transactions")
-      .select("id, date, description, amount, bank, category")
-      .order("date", { ascending: false }),
-    supabase.from("account_templates").select("id, name, type").order("sort_order"),
-  ]);
+  const [{ data: accounts }, { data: transactions }, { data: templates }, { data: bankAccounts }, { data: customFormats }] =
+    await Promise.all([
+      supabase.from("accounts").select("id, name, balance").order("name"),
+      supabase
+        .from("transactions")
+        .select("id, date, description, amount, bank, category")
+        .order("date", { ascending: false }),
+      supabase.from("account_templates").select("id, name, type").order("sort_order"),
+      supabase.from("accounts").select("bank_format").not("bank_format", "is", null),
+      supabase.from("custom_bank_formats").select("name").order("name"),
+    ]);
+
+  const bankShortlist = Array.from(new Set((bankAccounts ?? []).map((a) => a.bank_format as string)));
+  const customFormatNames = (customFormats ?? []).map((f) => f.name);
 
   return (
     <div className="flex flex-col gap-6">
@@ -44,7 +50,7 @@ export default async function DataEntryPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           <div data-tour="csv-upload">
-            <CsvUploadForm />
+            <CsvUploadForm bankShortlist={bankShortlist} customFormats={customFormatNames} />
           </div>
           <div data-tour="transactions-panel">
             <TransactionsPanel transactions={transactions ?? []} />

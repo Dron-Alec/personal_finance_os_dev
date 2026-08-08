@@ -11,6 +11,7 @@ const createSchema = z.object({
   type: z.enum(ACCOUNT_TYPES),
   balance: z.coerce.number(),
   asOfDate: z.string().min(1, "Date is required."),
+  bankFormat: z.string().trim().optional(),
 });
 
 const updateSchema = z.object({
@@ -18,6 +19,7 @@ const updateSchema = z.object({
   accountId: z.coerce.number(),
   balance: z.coerce.number(),
   asOfDate: z.string().min(1, "Date is required."),
+  bankFormat: z.string().trim().optional(),
 });
 
 export type SaveAccountResult = { error: string } | { error?: undefined };
@@ -55,11 +57,18 @@ export async function saveAccount(
     if (!parsed.success) {
       return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
     }
-    const { name, type, balance, asOfDate } = parsed.data;
+    const { name, type, balance, asOfDate, bankFormat } = parsed.data;
 
     const { data: account, error: insertError } = await supabase
       .from("accounts")
-      .insert({ user_id: user.id, name, type, balance, as_of_date: asOfDate })
+      .insert({
+        user_id: user.id,
+        name,
+        type,
+        balance,
+        as_of_date: asOfDate,
+        bank_format: bankFormat || null,
+      })
       .select("id")
       .single();
     if (insertError) return { error: insertError.message };
@@ -76,11 +85,16 @@ export async function saveAccount(
     if (!parsed.success) {
       return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
     }
-    const { accountId, balance, asOfDate } = parsed.data;
+    const { accountId, balance, asOfDate, bankFormat } = parsed.data;
 
     const { data: account, error: updateError } = await supabase
       .from("accounts")
-      .update({ balance, as_of_date: asOfDate, updated_at: new Date().toISOString() })
+      .update({
+        balance,
+        as_of_date: asOfDate,
+        bank_format: bankFormat || null,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", accountId)
       .select("name")
       .single();

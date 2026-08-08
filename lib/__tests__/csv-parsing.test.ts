@@ -67,13 +67,54 @@ describe("parseCsvForBank", () => {
     expect(txs[0].amount).toBe(200);
   });
 
-  it("Wells Fargo / Chase / BofA / Axos: uses Amount as-is", () => {
+  it("Wells Fargo / Chase / BofA / Axos / US Bank / Ally / Capital One 360 / Venmo / PayPal / Apple Card: uses Amount as-is", () => {
     const csv = "Date,Amount,Description\n04/01/2026,-75.00,SHELL OIL\n04/02/2026,2000.00,DIRECT DEPOSIT";
-    for (const bank of ["Wells Fargo Checking", "Chase Credit", "Bank of America Checking", "Axos Checking"] as const) {
+    for (const bank of [
+      "Wells Fargo Checking",
+      "Chase Credit",
+      "Bank of America Checking",
+      "Axos Checking",
+      "US Bank",
+      "Ally Bank",
+      "Capital One 360",
+      "Venmo",
+      "PayPal",
+      "Apple Card",
+    ] as const) {
       const txs = parseCsvForBank(bank, csv);
       expect(txs[0].amount).toBe(-75);
       expect(txs[1].amount).toBe(2000);
     }
+  });
+
+  it("American Express: negates the Amount column, same convention as Discover", () => {
+    const csv = "Date,Description,Amount\n07/01/2026,WHOLE FOODS,52.10\n07/02/2026,AUTOPAY PAYMENT,-500.00";
+    const txs = parseCsvForBank("American Express", csv);
+    expect(txs[0].amount).toBe(-52.1);
+    expect(txs[1].amount).toBe(500);
+  });
+
+  it("PNC: uses Withdrawals/Deposits as a debit/credit split", () => {
+    const csv =
+      "Date,Description,Withdrawals,Deposits\n08/01/2026,GROCERY STORE,45.00,\n08/02/2026,PAYCHECK,,1200.00";
+    const txs = parseCsvForBank("PNC", csv);
+    expect(txs[0].amount).toBe(-45);
+    expect(txs[1].amount).toBe(1200);
+  });
+
+  it("Capital One Credit: uses Debit/Credit as a split, prefers a date column over the dual Transaction/Posted pair", () => {
+    const csv =
+      "Transaction Date,Posted Date,Description,Category,Debit,Credit\n09/01/2026,09/02/2026,TARGET,Shopping,64.20,\n09/03/2026,09/04/2026,REFUND,Shopping,,20.00";
+    const txs = parseCsvForBank("Capital One Credit", csv);
+    expect(txs[0].amount).toBe(-64.2);
+    expect(txs[1].amount).toBe(20);
+  });
+
+  it("Venmo: finds the description via the Note column", () => {
+    const csv = "ID,Datetime,Type,Note,Amount (total)\n1,10/01/2026 10:00,Payment,Coffee with friend,-12.50";
+    const txs = parseCsvForBank("Venmo", csv);
+    expect(txs).toHaveLength(1);
+    expect(txs[0]).toMatchObject({ description: "Coffee with friend", amount: -12.5 });
   });
 
   it("skips a preamble before the real header row", () => {

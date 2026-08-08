@@ -1,0 +1,11 @@
+-- Optional "which statement format does this account use" tag, set when an
+-- account is created (or edited — unlike `type`, this isn't locked). Not a
+-- foreign key: valid values are either a BANK_FORMATS entry (fixed at build
+-- time) or a public.custom_bank_formats.name (open-ended, contributed at
+-- runtime), so a DB-level check/FK isn't practical here — validated by the
+-- app's picker UI instead.
+--
+-- Purpose: narrows the CSV Statement Format picker to "banks you actually
+-- have" (distinct accounts.bank_format values for the signed-in user)
+-- instead of the full shared list, from the first account someone creates.
+alter table public.accounts add column bank_format text;

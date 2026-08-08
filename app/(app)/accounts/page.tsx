@@ -12,7 +12,7 @@ export default async function AccountsPage() {
   const supabase = await createClient();
 
   const [{ data: accounts }, { data: history }] = await Promise.all([
-    supabase.from("accounts").select("id, name, type, balance, as_of_date").order("id"),
+    supabase.from("accounts").select("id, name, type, balance, as_of_date, bank_format").order("id"),
     supabase.from("account_balance_history").select("account_id, balance, as_of_date"),
   ]);
 

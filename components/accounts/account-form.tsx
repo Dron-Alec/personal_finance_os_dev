@@ -6,6 +6,7 @@ import { saveAccount } from "@/lib/actions/accounts";
 import { ACCOUNT_TYPES } from "@/lib/constants";
 import { toDateInputValue } from "@/lib/date-utils";
 import { AccountTypeSelect } from "@/components/accounts/account-type-select";
+import { AccountBankSelect } from "@/components/accounts/account-bank-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +20,21 @@ import {
 
 const ADD_NEW = "__new__";
 
-export type AccountOption = { id: number; name: string; type: string; balance: number };
+export type AccountOption = {
+  id: number;
+  name: string;
+  type: string;
+  balance: number;
+  bank_format: string | null;
+};
+
+// Remounts (via `key`) when the selected account changes, so its bank
+// picker resets to that account's saved value — same trick the Balance
+// input uses instead of an effect-based resync.
+function BankField({ defaultValue }: { defaultValue: string }) {
+  const [value, setValue] = useState(defaultValue);
+  return <AccountBankSelect id="acct-bank" name="bankFormat" value={value} onChange={setValue} />;
+}
 
 export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
   const [selected, setSelected] = useState<string>(accounts.length ? String(accounts[0].id) : ADD_NEW);
@@ -101,7 +116,15 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
           <Label htmlFor="acct-date">As of Date</Label>
           <Input id="acct-date" name="asOfDate" type="date" defaultValue={toDateInputValue(new Date())} />
         </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="acct-bank">Bank (optional)</Label>
+          <BankField key={selected} defaultValue={existing?.bank_format ?? ""} />
+        </div>
       </div>
+      <p className="text-xs text-muted-foreground">
+        Setting a bank narrows the Statement Format choices when you upload CSVs later — opening
+        another account is always a chance to add a new one.
+      </p>
 
       <Button type="submit" disabled={pending} className="w-fit">
         {pending ? "Saving…" : "Save Account"}

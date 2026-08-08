@@ -13,18 +13,32 @@ export const ACCOUNT_TYPES = [
 
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
 
+// Alphabetized — order doesn't affect parsing, and the dropdown is
+// searchable, but a stable sort makes the unfiltered list easier to scan.
+// Only formats with independently sourced/tested header data belong here
+// (see lib/__tests__/csv-header-matcher.test.ts) — an entry here implies
+// the app can actually parse it, not just that the bank offers CSV export.
 export const BANK_FORMATS = [
+  "Ally Bank",
+  "American Express",
+  "Apple Card",
+  "Axos Checking",
+  "Axos Savings",
+  "Bank of America Checking",
+  "Bank of America Credit",
+  "Capital One 360",
+  "Capital One Credit",
+  "Chase Checking",
+  "Chase Credit",
   "Citi Checking",
   "Citi Credit",
   "Discover",
-  "Axos Checking",
-  "Axos Savings",
+  "PayPal",
+  "PNC",
+  "US Bank",
+  "Venmo",
   "Wells Fargo Checking",
   "Wells Fargo Credit",
-  "Chase Checking",
-  "Chase Credit",
-  "Bank of America Checking",
-  "Bank of America Credit",
 ] as const;
 
 export type BankFormat = (typeof BANK_FORMATS)[number];

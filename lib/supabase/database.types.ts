@@ -26,6 +26,7 @@ export interface Database {
           type: string;
           balance: number;
           as_of_date: string;
+          bank_format: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -36,6 +37,7 @@ export interface Database {
           type: string;
           balance?: number;
           as_of_date: string;
+          bank_format?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -46,6 +48,7 @@ export interface Database {
           type?: string;
           balance?: number;
           as_of_date?: string;
+          bank_format?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -188,6 +191,60 @@ export interface Database {
           user_id?: string;
           rules?: CategoryRuleEntry[];
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      custom_bank_formats: {
+        Row: {
+          id: number;
+          name: string;
+          date_column: string;
+          secondary_date_column: string | null;
+          description_column: string;
+          amount_type: string;
+          amount_column: string | null;
+          debit_column: string | null;
+          credit_column: string | null;
+          type_column: string | null;
+          category_column: string | null;
+          balance_column: string | null;
+          number_format: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          name: string;
+          date_column: string;
+          secondary_date_column?: string | null;
+          description_column: string;
+          amount_type: string;
+          amount_column?: string | null;
+          debit_column?: string | null;
+          credit_column?: string | null;
+          type_column?: string | null;
+          category_column?: string | null;
+          balance_column?: string | null;
+          number_format?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          name?: string;
+          date_column?: string;
+          secondary_date_column?: string | null;
+          description_column?: string;
+          amount_type?: string;
+          amount_column?: string | null;
+          debit_column?: string | null;
+          credit_column?: string | null;
+          type_column?: string | null;
+          category_column?: string | null;
+          balance_column?: string | null;
+          number_format?: string | null;
+          created_by?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };
