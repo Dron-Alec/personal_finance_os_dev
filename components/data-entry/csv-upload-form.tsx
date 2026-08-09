@@ -213,6 +213,12 @@ export function CsvUploadForm({
           )}
         </div>
       )}
+
+      <p className="text-xs text-muted-foreground">
+        Don&apos;t have a statement handy? Log into your bank or card&apos;s website, go to
+        Transaction History, and export one month at a time to CSV (or Excel, then re-save as
+        CSV).
+      </p>
     </div>
   );
 }

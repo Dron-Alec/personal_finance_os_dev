@@ -44,7 +44,7 @@ export default async function DataEntryPage() {
         <CardHeader>
           <CardTitle>Upload Statements</CardTitle>
           <CardDescription>
-            Upload bank or credit card CSVs as they come in. Transactions are categorized
+            At month-end, upload your bank and credit card CSVs. Transactions are categorized
             automatically and populate the Spending analysis.
           </CardDescription>
         </CardHeader>
