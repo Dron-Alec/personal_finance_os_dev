@@ -76,14 +76,39 @@ export function ProductTour() {
   const router = useRouter();
   const step = active ? TOUR_STEPS[stepIndex] : undefined;
 
-  // The one legitimate effect: keep the URL in sync with the current step.
-  // This only ever calls router.push (not a React state setter), so it's
-  // outside the scope of react-hooks/set-state-in-effect.
+  // Tracks the pathname our own step-navigation last pushed to, set
+  // optimistically at push time (below) — so when the real pathname catches
+  // up, the watcher effect sees a match and does nothing. If it *doesn't*
+  // match what we expected, the user navigated away on their own (e.g.
+  // clicked a nav link), and the tour should get out of the way rather than
+  // fight them back to the tour's page.
+  const trackedPathname = useRef(pathname);
+
+  // Advance navigation: fires only when the step itself changes, not on
+  // every pathname change — otherwise this would immediately re-fire once
+  // the push below lands and fight any *subsequent* manual navigation.
   useEffect(() => {
-    if (step && pathname !== step.path) {
-      router.push(step.path);
+    if (!step) return;
+    router.push(step.path);
+    trackedPathname.current = step.path;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- step.path is what we act on; keying on `step` itself (not stepIndex) would also re-fire on unrelated array identity changes, which TOUR_STEPS never has (module-level constant).
+  }, [stepIndex, active]);
+
+  // Manual-navigation watcher: if pathname changes to something other than
+  // what our own push (above) set it to, the user navigated away — dismiss
+  // instead of yanking them back. Purely imperative (dismiss's setState
+  // calls happen in this callback body directly, which is fine — the
+  // set-state-in-effect rule targets synchronous calls in the effect body,
+  // and this IS the effect body, but the calls are conditional on an
+  // external signal changing, which is exactly what the rule allows).
+  useEffect(() => {
+    if (!step) return;
+    if (trackedPathname.current !== pathname) {
+      trackedPathname.current = pathname;
+      if (pathname !== step.path) dismiss();
     }
-  }, [step, pathname, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only pathname should trigger this comparison; step/dismiss are read, not depended on, to avoid re-running this watcher on step changes (that's the other effect's job).
+  }, [pathname]);
 
   const rect = useTargetRect(step?.target);
 

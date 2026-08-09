@@ -20,6 +20,12 @@ export function GoalForm({ accounts }: { accounts: { id: number; name: string }[
   const [scope, setScope] = useState<string>(NET_WORTH);
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
+  // Remounts the uncontrolled inputs (and the Select, so it reinitializes
+  // cleanly against the reset `scope` state) after a successful save —
+  // deliberately not formRef.current?.reset(): calling a native form reset
+  // on a form containing a React-controlled Select desyncs its displayed
+  // label from its value (shows the raw value instead of the item's text).
+  const [formGeneration, setFormGeneration] = useState(0);
 
   const isAccount = scope !== NET_WORTH;
 
@@ -33,14 +39,14 @@ export function GoalForm({ accounts }: { accounts: { id: number; name: string }[
         toast.error(result.error);
       } else {
         toast.success("Goal saved.");
-        formRef.current?.reset();
         setScope(NET_WORTH);
+        setFormGeneration((g) => g + 1);
       }
     });
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form key={formGeneration} ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
       <input type="hidden" name="scopeType" value={isAccount ? "account" : "net_worth"} />
       {isAccount && <input type="hidden" name="accountId" value={scope} />}
 

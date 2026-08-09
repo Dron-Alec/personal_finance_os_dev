@@ -1,3 +1,5 @@
+"use client";
+
 import { XIcon } from "lucide-react";
 import type { Goal, GoalProgress } from "@/lib/goals";
 import { removeGoal } from "@/lib/actions/goals";
