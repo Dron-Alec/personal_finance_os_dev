@@ -99,6 +99,17 @@
   --chart-grid: #e1e0d9;
   --chart-axis: #898781;
   --chart-baseline: #c3c2b7;
+
+  /* Money-movement categories (Income, Investments, Transfers, Internal
+     Transfer, Other) — a 5-step grayscale ordinal ramp, deliberately muted
+     rather than full categorical hues, so they read as "not a spending
+     category" while still being distinguishable from each other. Validated
+     with scripts/validate_palette.js --ordinal. */
+  --chart-flow-1: #4a4844;
+  --chart-flow-2: #63615c;
+  --chart-flow-3: #7c7972;
+  --chart-flow-4: #96938a;
+  --chart-flow-5: #b0aca2;
 }
 
 .dark {
@@ -151,6 +162,14 @@
   --chart-grid: #2c2c2a;
   --chart-axis: #898781;
   --chart-baseline: #383835;
+
+  /* Money-movement categories — same ramp, re-stepped lighter for the dark
+     surface (not an automatic flip), validated the same way. */
+  --chart-flow-1: #726f66;
+  --chart-flow-2: #8b877d;
+  --chart-flow-3: #a4a096;
+  --chart-flow-4: #bdb9ae;
+  --chart-flow-5: #d6d2c7;
 }
 
 @layer base {

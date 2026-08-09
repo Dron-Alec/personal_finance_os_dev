@@ -19,6 +19,28 @@ export const CATEGORICAL_PALETTE = [
 // only the fill color is shared).
 export const OTHER_COLOR = "var(--chart-other)";
 
+// A 5-step grayscale ordinal ramp (validated with --ordinal, not the 8-hue
+// categorical checks) reserved for money-movement categories — Income,
+// Investments, Transfers, Internal Transfer, and the literal "Other" bucket.
+// These aren't spending categories, so they deliberately don't compete for
+// one of the 8 vivid categorical slots; they just need to stop being
+// visually identical to each other.
+const FLOW_PALETTE = [
+  "var(--chart-flow-1)",
+  "var(--chart-flow-2)",
+  "var(--chart-flow-3)",
+  "var(--chart-flow-4)",
+  "var(--chart-flow-5)",
+] as const;
+
+const FLOW_CATEGORY_COLOR_MAP: Record<string, string> = {
+  Income: FLOW_PALETTE[0],
+  Investments: FLOW_PALETTE[1],
+  Transfers: FLOW_PALETTE[2],
+  "Internal Transfer": FLOW_PALETTE[3],
+  Other: FLOW_PALETTE[4],
+};
+
 export const TARGET_LINE_COLOR = "var(--chart-target)"; // reference line, not a data series
 export const DELTA_GOOD_COLOR = "var(--chart-delta-good)";
 export const DELTA_BAD_COLOR = "var(--chart-delta-bad)";
@@ -48,7 +70,7 @@ const CATEGORY_COLOR_MAP: Record<string, string> = Object.fromEntries(
 );
 
 export function getCategoryColor(category: string): string {
-  return CATEGORY_COLOR_MAP[category] ?? OTHER_COLOR;
+  return CATEGORY_COLOR_MAP[category] ?? FLOW_CATEGORY_COLOR_MAP[category] ?? OTHER_COLOR;
 }
 
 const ACCOUNT_TYPE_COLOR_ORDER = [
