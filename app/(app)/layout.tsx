@@ -17,7 +17,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col">
       <header className="border-b">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <h1 className="text-xl font-semibold">💰 Personal Finance OS</h1>
+          <h1 className="text-xl font-semibold">Candid</h1>
           <div className="flex items-center gap-2">
             <ProductTour />
             <ThemeToggle />

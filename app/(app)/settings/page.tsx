@@ -1,3 +1,4 @@
+import { InfoIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_CATEGORY_RULES } from "@/lib/constants";
 import { clearTransactions, resetAllData } from "@/lib/actions/settings";
@@ -63,6 +64,37 @@ export default async function SettingsPage() {
             confirmLabel="Reset everything"
             onConfirm={resetAllData}
           />
+        </CardContent>
+      </Card>
+
+      <Card data-tour="about">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-1.5">
+            <InfoIcon className="size-4 text-muted-foreground" />
+            About Candid
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
+          <p>
+            Most finance apps are built to disappear. They sync quietly in the background,
+            categorize your spending while you&apos;re not looking, and hand you a tidy number
+            you never really earned. That convenience has a cost: you stop paying attention.
+          </p>
+          <p>
+            Candid works differently, on purpose. You bring your own statements. You see every
+            transaction. You decide what it means. It&apos;s a few extra minutes a month — and
+            it&apos;s the few minutes that actually change how you spend.
+          </p>
+          <p>
+            This isn&apos;t a missing feature. It&apos;s the whole idea. Reviewing your money is
+            how you actually know your money.
+          </p>
+          <p>
+            Candid gives you the tools to make that honest — a clear view of your net worth,
+            goals you can actually track against reality, and a way to plan ahead without
+            guessing. But the looking part is yours. That&apos;s not a limitation. That&apos;s
+            the feature.
+          </p>
         </CardContent>
       </Card>
     </div>

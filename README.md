@@ -1,4 +1,6 @@
-# Personal Finance OS
+# Candid
+
+*Your money, honestly.*
 
 A personal finance dashboard built with Next.js and Supabase. Track net worth over time, import bank/credit card statements, monitor spending by category, and manage account balances — all in one place.
 

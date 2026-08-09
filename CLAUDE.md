@@ -1,6 +1,10 @@
 @AGENTS.md
 
-# Personal Finance OS — Project Context
+# Candid ("Your money, honestly.") — Project Context
+
+Formerly "Personal Finance OS" — renamed to Candid. The repo directory,
+Supabase project name, and package.json name are unchanged (internal
+identifiers only); this is a user-facing brand rename.
 
 ## What this is
 A Next.js app for tracking personal finances: net worth over time, spending

@@ -15,8 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Personal Finance OS",
-  description: "Track net worth, spending, and accounts.",
+  title: "Candid",
+  description:
+    "Your money, honestly. Track net worth, spending, and goals — reviewed by you, not smoothed over by auto-sync.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

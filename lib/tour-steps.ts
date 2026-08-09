@@ -11,8 +11,8 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "welcome",
     path: "/data-entry",
-    title: "Welcome to Personal Finance OS",
-    body: "A quick tour of every tab. Use Next/Back to move around, or Skip at any time — you can always restart this from the ? in the header.",
+    title: "Welcome to Candid",
+    body: "Your money, honestly. No auto-sync smoothing over the details, no dashboard you glance at and forget — Candid asks you to actually look, because that's the part that works. This is a quick tour of every tab; use Next/Back to move around, or Skip at any time — you can always restart this from the ? in the header.",
   },
   {
     id: "balances",
@@ -125,6 +125,13 @@ export const TOUR_STEPS: TourStep[] = [
     target: "danger-zone",
     title: "Danger Zone",
     body: '"Clear All Transactions" wipes transactions only. "Reset ALL Data" wipes transactions, accounts, and snapshots. Both require confirming first and can\'t be undone.',
+  },
+  {
+    id: "about",
+    path: "/settings",
+    target: "about",
+    title: "About Candid",
+    body: "The full case for why Candid makes you look at your own transactions instead of syncing quietly in the background — read it anytime here.",
   },
   {
     id: "wrap-up",

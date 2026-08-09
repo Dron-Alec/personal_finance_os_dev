@@ -65,10 +65,14 @@ export default function SignupPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">💰 Personal Finance OS</CardTitle>
-          <CardDescription>Create your account</CardDescription>
+          <CardTitle className="text-2xl">Candid</CardTitle>
+          <CardDescription>Your money, honestly.</CardDescription>
         </CardHeader>
         <CardContent>
+          <p className="mb-4 text-sm text-muted-foreground">
+            No auto-sync smoothing over the details. No dashboard you glance at and forget.
+            Candid asks you to actually look — because that&apos;s the part that works.
+          </p>
           {checkEmail ? (
             <p className="text-sm">
               Check <strong>your email</strong> for a confirmation link, then come back and
