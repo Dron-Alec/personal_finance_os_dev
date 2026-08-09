@@ -16,9 +16,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-b">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <h1 className="text-xl font-semibold">Candid 💰</h1>
-          <div className="flex items-center gap-2">
+        <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto_1fr] items-center px-4 py-3">
+          <div />
+          <h1 className="justify-self-center text-xl font-semibold">Candid 💰</h1>
+          <div className="flex items-center justify-self-end gap-2">
             <ProductTour />
             <ThemeToggle />
             <form action={signOut}>
@@ -28,7 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </form>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2">
+        <nav className="mx-auto flex max-w-6xl justify-center gap-1 overflow-x-auto px-4 pb-2">
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
