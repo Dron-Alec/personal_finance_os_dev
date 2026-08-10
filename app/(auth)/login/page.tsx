@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -25,7 +25,19 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+// useSearchParams() requires a Suspense boundary during static prerendering
+// (next build enforces this; next dev doesn't, which is why this wasn't
+// caught locally) — split into an inner component so the boundary can wrap
+// just the part that needs it.
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect");

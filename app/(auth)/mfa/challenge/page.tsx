@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+// useSearchParams() requires a Suspense boundary during static prerendering
+// (next build enforces this; next dev doesn't, which is why this wasn't
+// caught locally) — split into an inner component so the boundary can wrap
+// just the part that needs it.
 export default function MfaChallengePage() {
+  return (
+    <Suspense>
+      <MfaChallengeForm />
+    </Suspense>
+  );
+}
+
+function MfaChallengeForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect");

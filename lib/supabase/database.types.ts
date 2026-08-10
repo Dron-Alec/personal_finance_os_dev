@@ -1,5 +1,5 @@
 // Generated via `mcp__plugin_supabase_supabase__generate_typescript_types`
-// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0017.
+// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0018.
 // Regenerate the same way after any schema change rather than hand-editing.
 
 export type Json =
@@ -70,6 +70,7 @@ export type Database = {
       }
       account_templates: {
         Row: {
+          bank_format: string | null
           created_at: string
           id: number
           name: string
@@ -78,6 +79,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bank_format?: string | null
           created_at?: string
           id?: never
           name: string
@@ -86,6 +88,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          bank_format?: string | null
           created_at?: string
           id?: never
           name?: string
@@ -462,6 +465,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          onboarded_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          onboarded_at?: string | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          onboarded_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
