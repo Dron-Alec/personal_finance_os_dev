@@ -1,12 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/format";
 import { getAccountColor, getAccountTypeColor, CATEGORICAL_PALETTE } from "@/lib/chart-colors";
+import { projectGoalCurve, type Goal } from "@/lib/goals";
 import { AccountForm } from "@/components/accounts/account-form";
 import { AccountsTable } from "@/components/accounts/accounts-table";
 import { BalanceHistorySection } from "@/components/accounts/balance-history-section";
 import { BreakdownPieChart } from "@/components/charts/breakdown-pie-chart";
 import { TotalsBarChart } from "@/components/charts/totals-bar-chart";
-import type { GoalLine } from "@/components/charts/balance-history-chart";
+import type { GoalLine, GoalSeries } from "@/components/charts/balance-history-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function AccountsPage() {
@@ -15,23 +16,40 @@ export default async function AccountsPage() {
   const [{ data: accounts }, { data: history }, { data: goals }] = await Promise.all([
     supabase.from("accounts").select("id, name, type, balance, as_of_date, bank_format").order("id"),
     supabase.from("account_balance_history").select("account_id, balance, as_of_date"),
-    supabase.from("goals").select("id, name, account_id, target_amount").eq("scope_type", "account"),
+    supabase
+      .from("goals")
+      .select("*")
+      .eq("scope_type", "account"),
   ]);
 
   const accountList = accounts ?? [];
+  const accountsById = new Map(accountList.map((a) => [a.id, a]));
   const sortedIds = [...accountList].map((a) => a.id).sort((a, b) => a - b);
   const total = accountList.reduce((sum, a) => sum + Number(a.balance), 0);
 
+  // Goals with a contribution plan get a projected trajectory line
+  // (GoalSeries/curve); goals without one fall back to the flat horizontal
+  // target line (GoalLine) they've always had.
   const goalLinesByAccount: Record<number, GoalLine[]> = {};
-  (goals ?? []).forEach((g, index) => {
+  const goalSeriesByAccount: Record<number, GoalSeries[]> = {};
+  const goalCurvesByAccount: Record<number, { id: number; points: ReturnType<typeof projectGoalCurve> }[]> = {};
+  (goals ?? []).forEach((raw, index) => {
+    const g = raw as Goal;
     if (g.account_id === null) return;
-    const line: GoalLine = {
-      id: g.id,
-      name: g.name,
-      targetAmount: Number(g.target_amount),
-      color: CATEGORICAL_PALETTE[index % CATEGORICAL_PALETTE.length],
-    };
-    (goalLinesByAccount[g.account_id] ??= []).push(line);
+    const color = CATEGORICAL_PALETTE[index % CATEGORICAL_PALETTE.length];
+    const currentBalance = Number(accountsById.get(g.account_id)?.balance ?? 0);
+    const curvePoints = projectGoalCurve(g, currentBalance);
+    if (curvePoints.length > 0) {
+      (goalSeriesByAccount[g.account_id] ??= []).push({ id: g.id, name: g.name, color });
+      (goalCurvesByAccount[g.account_id] ??= []).push({ id: g.id, points: curvePoints });
+    } else {
+      (goalLinesByAccount[g.account_id] ??= []).push({
+        id: g.id,
+        name: g.name,
+        targetAmount: Number(g.target_amount),
+        color,
+      });
+    }
   });
 
   const pieData = accountList.map((a) => ({
@@ -104,6 +122,8 @@ export default async function AccountsPage() {
                 accounts={accountList}
                 history={history ?? []}
                 goalLinesByAccount={goalLinesByAccount}
+                goalSeriesByAccount={goalSeriesByAccount}
+                goalCurvesByAccount={goalCurvesByAccount}
               />
             </CardContent>
           </Card>

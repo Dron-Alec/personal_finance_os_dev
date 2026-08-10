@@ -1,5 +1,18 @@
 import { parseLocalDate, toDateInputValue } from "@/lib/date-utils";
 
+export type ContributionModel = "flat" | "growing" | "lump_flat";
+
+/** Only the fields relevant to `contribution_model` are ever read; the rest
+ * sit unused. `growthRateAnnual` applies under every model — it's an
+ * assumed investment return, orthogonal to the contribution schedule. */
+export type ContributionParams = {
+  monthlyAmount?: number;
+  annualStepPercent?: number;
+  lumpAmount?: number;
+  lumpMonth?: number;
+  growthRateAnnual?: number;
+};
+
 export type Goal = {
   id: number;
   name: string;
@@ -7,6 +20,8 @@ export type Goal = {
   account_id: number | null;
   target_amount: number;
   target_date: string; // YYYY-MM-DD
+  contribution_model: ContributionModel | null;
+  contribution_params: ContributionParams;
   created_at: string;
 };
 
@@ -51,22 +66,43 @@ function addMonths(date: Date, months: number): Date {
 // ---------------------------------------------------------------------------
 // Deterministic contribution-model helpers — pure functions, no persistence,
 // no AI. Used for the live "~$X/mo needed" hint during goal creation
-// (reverseSolveFlat) and available for future what-if projections.
+// (reverseSolveFlat) and to project each goal's benchmark curve on the
+// charts (projectGoalCurve, below).
+//
+// `annualGrowthRate` (a %, e.g. 7 for 7%/yr) is optional on every helper —
+// it compounds monthly on the balance *before* that month's contribution is
+// added, same convention throughout so curves stay comparable.
 // ---------------------------------------------------------------------------
 
+function monthlyRateFromAnnual(annualGrowthRate: number): number {
+  return Math.pow(1 + annualGrowthRate / 100, 1 / 12) - 1;
+}
+
 /** Solves the flat monthly contribution needed to go from `current` to
- * `target` over `monthsRemaining` months. Null once there's no time left. */
-export function reverseSolveFlat(current: number, target: number, monthsRemaining: number): number | null {
+ * `target` over `monthsRemaining` months, optionally assuming the balance
+ * also compounds at `annualGrowthRate`%/yr. Null once there's no time left. */
+export function reverseSolveFlat(
+  current: number,
+  target: number,
+  monthsRemaining: number,
+  annualGrowthRate = 0,
+): number | null {
   if (monthsRemaining <= 0) return null;
-  return (target - current) / monthsRemaining;
+  if (annualGrowthRate === 0) return (target - current) / monthsRemaining;
+  const r = monthlyRateFromAnnual(annualGrowthRate);
+  const growth = Math.pow(1 + r, monthsRemaining);
+  const annuityFactor = (growth - 1) / r;
+  if (annuityFactor === 0) return (target - current) / monthsRemaining;
+  return (target - current * growth) / annuityFactor;
 }
 
 /** Balance trajectory under a flat monthly contribution. */
-export function flat(startBalance: number, monthlyAmount: number, months: number): number[] {
+export function flat(startBalance: number, monthlyAmount: number, months: number, annualGrowthRate = 0): number[] {
   const out: number[] = [];
+  const r = monthlyRateFromAnnual(annualGrowthRate);
   let bal = startBalance;
   for (let i = 0; i < months; i++) {
-    bal += monthlyAmount;
+    bal = bal * (1 + r) + monthlyAmount;
     out.push(bal);
   }
   return out;
@@ -79,13 +115,15 @@ export function steppedPercent(
   monthlyBase: number,
   annualStepPercent: number,
   months: number,
+  annualGrowthRate = 0,
 ): number[] {
   const out: number[] = [];
+  const r = monthlyRateFromAnnual(annualGrowthRate);
   let bal = startBalance;
   let monthly = monthlyBase;
   for (let i = 0; i < months; i++) {
     if (i > 0 && i % 12 === 0) monthly *= 1 + annualStepPercent / 100;
-    bal += monthly;
+    bal = bal * (1 + r) + monthly;
     out.push(bal);
   }
   return out;
@@ -99,15 +137,50 @@ export function lumpPlusFlat(
   lumpAmount: number,
   lumpMonth: number,
   months: number,
+  annualGrowthRate = 0,
 ): number[] {
   const out: number[] = [];
+  const r = monthlyRateFromAnnual(annualGrowthRate);
   let bal = startBalance;
   for (let i = 1; i <= months; i++) {
-    bal += monthlyAmount;
+    bal = bal * (1 + r) + monthlyAmount;
     if (i === lumpMonth) bal += lumpAmount;
     out.push(bal);
   }
   return out;
+}
+
+/** Projects a goal's benchmark trajectory from today's balance to its
+ * target date using its stored contribution model + params. Returns [] for
+ * goals with no contribution plan (they fall back to a flat target line —
+ * see GoalLine) or with nothing left to project. */
+export function projectGoalCurve(
+  goal: Pick<Goal, "target_date" | "contribution_model" | "contribution_params">,
+  currentBalance: number,
+  today: Date = new Date(),
+): BalancePoint[] {
+  if (!goal.contribution_model) return [];
+  const months = Math.ceil(monthsBetween(today, parseLocalDate(goal.target_date)));
+  if (months <= 0) return [];
+
+  const p = goal.contribution_params ?? {};
+  const growthRate = p.growthRateAnnual ?? 0;
+  let series: number[];
+  switch (goal.contribution_model) {
+    case "flat":
+      series = flat(currentBalance, p.monthlyAmount ?? 0, months, growthRate);
+      break;
+    case "growing":
+      series = steppedPercent(currentBalance, p.monthlyAmount ?? 0, p.annualStepPercent ?? 0, months, growthRate);
+      break;
+    case "lump_flat":
+      series = lumpPlusFlat(currentBalance, p.monthlyAmount ?? 0, p.lumpAmount ?? 0, p.lumpMonth ?? 1, months, growthRate);
+      break;
+    default:
+      return [];
+  }
+
+  return series.map((balance, i) => ({ date: toDateInputValue(addMonths(today, i + 1)), balance }));
 }
 
 // ---------------------------------------------------------------------------
@@ -115,7 +188,7 @@ export function lumpPlusFlat(
 // ---------------------------------------------------------------------------
 
 export function computeGoalProgress(
-  goal: Pick<Goal, "target_amount" | "target_date">,
+  goal: Pick<Goal, "target_amount" | "target_date"> & Partial<Pick<Goal, "contribution_params">>,
   currentValue: number,
   balanceHistory: BalancePoint[],
   options: { trailingWindowMonths?: number; today?: Date } = {},
@@ -123,6 +196,7 @@ export function computeGoalProgress(
   const today = options.today ?? new Date();
   const requestedWindow = options.trailingWindowMonths ?? 3;
   const targetDate = parseLocalDate(goal.target_date);
+  const assumedGrowthRate = goal.contribution_params?.growthRateAnnual ?? 0;
 
   const percent = goal.target_amount > 0 ? (currentValue / goal.target_amount) * 100 : 0;
   const rawMonthsRemaining = monthsBetween(today, targetDate);
@@ -142,7 +216,12 @@ export function computeGoalProgress(
     };
   }
 
-  const requiredPaceMonthly = reverseSolveFlat(currentValue, goal.target_amount, rawMonthsRemaining);
+  const requiredPaceMonthly = reverseSolveFlat(
+    currentValue,
+    goal.target_amount,
+    rawMonthsRemaining,
+    assumedGrowthRate,
+  );
 
   // Trailing-window actual pace from real balance history: walk back to the
   // latest point at or before (today - window); if history doesn't reach

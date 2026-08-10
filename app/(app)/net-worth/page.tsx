@@ -1,11 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { currentQuarter } from "@/lib/date-utils";
-import { formatCurrency, formatSignedCurrency } from "@/lib/format";
-import { buildNetWorthChartData } from "@/lib/build-net-worth-chart-data";
 import { buildAccountOverlayData } from "@/lib/build-account-overlay-data";
-import { computeGoalProgress, type Goal } from "@/lib/goals";
+import { computeGoalProgress, projectGoalCurve, type Goal } from "@/lib/goals";
 import { CATEGORICAL_PALETTE } from "@/lib/chart-colors";
-import { NetWorthChart, type GoalLine } from "@/components/charts/net-worth-chart";
+import type { GoalLine, GoalSeries } from "@/components/charts/net-worth-chart";
+import type { GoalCurve } from "@/lib/build-net-worth-chart-data";
+import { NetWorthChartSection } from "@/components/net-worth/net-worth-chart-section";
 import { AccountOverlayChart } from "@/components/charts/account-overlay-chart";
 import { SnapshotForm } from "@/components/net-worth/snapshot-form";
 import { SnapshotHistory } from "@/components/net-worth/snapshot-history";
@@ -27,9 +27,7 @@ export default async function NetWorthPage() {
 
   const sortedSnapshots = [...(snapshots ?? [])].sort((a, b) => (a.date < b.date ? -1 : 1));
   const latest = sortedSnapshots.at(-1);
-  const prev = sortedSnapshots.at(-2);
   const cq = currentQuarter();
-  const target = (targets ?? []).find((t) => t.quarter === cq);
 
   const accountList = accounts ?? [];
   const accountsById = new Map(accountList.map((a) => [a.id, a]));
@@ -54,26 +52,59 @@ export default async function NetWorthPage() {
       progress: computeGoalProgress(goal, currentValue, balanceHistory),
       scopeLabel,
       color: CATEGORICAL_PALETTE[index % CATEGORICAL_PALETTE.length],
+      curvePoints: projectGoalCurve(goal, currentValue),
     };
   });
 
-  const netWorthGoalLines: GoalLine[] = goalCards
-    .filter(({ goal }) => goal.scope_type === "net_worth")
+  // Goals with a contribution plan get a projected trajectory line
+  // (GoalSeries/GoalCurve); goals without one fall back to the flat
+  // horizontal target line (GoalLine) they've always had.
+  const netWorthScoped = goalCards.filter(({ goal }) => goal.scope_type === "net_worth");
+  const netWorthGoalLines: GoalLine[] = netWorthScoped
+    .filter((g) => g.curvePoints.length === 0)
     .map(({ goal, color }) => ({ id: goal.id, name: goal.name, targetAmount: goal.target_amount, color }));
+  const netWorthGoalSeries: GoalSeries[] = netWorthScoped
+    .filter((g) => g.curvePoints.length > 0)
+    .map(({ goal, color }) => ({ id: goal.id, name: goal.name, color }));
+  const netWorthGoalCurves: GoalCurve[] = netWorthScoped
+    .filter((g) => g.curvePoints.length > 0)
+    .map(({ goal, curvePoints }) => ({ id: goal.id, points: curvePoints }));
 
   const overlayData = buildAccountOverlayData(accountList, historyList);
 
+  const snapshotFormCard = (
+    <Card data-tour="snapshot-form">
+      <CardHeader>
+        <CardTitle>Add / Update Snapshot</CardTitle>
+        <CardDescription>Manually record a net worth snapshot for any date.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <SnapshotForm />
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="flex flex-col gap-6">
-      <Card data-tour="snapshot-form">
-        <CardHeader>
-          <CardTitle>Add / Update Snapshot</CardTitle>
-          <CardDescription>Manually record a net worth snapshot for any date.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SnapshotForm />
-        </CardContent>
-      </Card>
+      {!latest ? (
+        <>
+          <p className="text-muted-foreground">
+            No snapshots yet — add your first net worth entry below.
+          </p>
+          {snapshotFormCard}
+        </>
+      ) : (
+        <NetWorthChartSection
+          accounts={accountList}
+          history={historyList}
+          snapshots={sortedSnapshots}
+          targets={targets ?? []}
+          currentQuarter={cq}
+          goalLines={netWorthGoalLines}
+          goalSeries={netWorthGoalSeries}
+          goalCurves={netWorthGoalCurves}
+        />
+      )}
 
       <Card data-tour="goals">
         <CardHeader>
@@ -109,52 +140,9 @@ export default async function NetWorthPage() {
         </Card>
       )}
 
-      {!latest ? (
-        <p className="text-muted-foreground">
-          No snapshots yet — add your first net worth entry above.
-        </p>
-      ) : (
+      {latest && (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardDescription>Current Net Worth</CardDescription>
-                <CardTitle className="text-2xl">{formatCurrency(latest.net_worth, 0)}</CardTitle>
-              </CardHeader>
-            </Card>
-            {target && (
-              <Card>
-                <CardHeader>
-                  <CardDescription>{cq} Target</CardDescription>
-                  <CardTitle className="text-2xl">
-                    {formatCurrency(target.target_net_worth, 0)}
-                  </CardTitle>
-                  <CardDescription>
-                    {formatSignedCurrency(latest.net_worth - target.target_net_worth, 0)} vs. target
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            )}
-            {prev && (
-              <Card>
-                <CardHeader>
-                  <CardDescription>Δ Since Last Entry</CardDescription>
-                  <CardTitle className="text-2xl">
-                    {formatSignedCurrency(latest.net_worth - prev.net_worth, 0)}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-            )}
-          </div>
-
-          <Card data-tour="nw-chart">
-            <CardContent>
-              <NetWorthChart
-                data={buildNetWorthChartData(sortedSnapshots, targets ?? [])}
-                goalLines={netWorthGoalLines}
-              />
-            </CardContent>
-          </Card>
+          {snapshotFormCard}
 
           <Card>
             <CardHeader>

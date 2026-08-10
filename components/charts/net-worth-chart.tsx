@@ -20,13 +20,31 @@ export type NetWorthPoint = {
   label: string; // formatted for axis/tooltip
   netWorth: number | null;
   target: number | null;
+  [key: string]: string | number | null;
 };
 
+/** A goal with no contribution plan — rendered as a flat horizontal line at
+ * the target amount, spanning the whole chart. */
 export type GoalLine = { id: number; name: string; targetAmount: number; color: string };
+
+/** A goal with a contribution plan — rendered as its own projected
+ * trajectory series. `dataKey` must match a `goal_${id}` column already
+ * merged into `data` by buildNetWorthChartData. */
+export type GoalSeries = { id: number; name: string; color: string };
 
 const NET_WORTH_COLOR = CATEGORICAL_PALETTE[0];
 
-export function NetWorthChart({ data, goalLines = [] }: { data: NetWorthPoint[]; goalLines?: GoalLine[] }) {
+export function NetWorthChart({
+  data,
+  goalLines = [],
+  goalSeries = [],
+  seriesName = "Net Worth",
+}: {
+  data: NetWorthPoint[];
+  goalLines?: GoalLine[];
+  goalSeries?: GoalSeries[];
+  seriesName?: string;
+}) {
   return (
     <ResponsiveContainer width="100%" height={380}>
       <ComposedChart data={data} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
@@ -36,7 +54,7 @@ export function NetWorthChart({ data, goalLines = [] }: { data: NetWorthPoint[];
           stroke={AXIS_COLOR}
           fontSize={12}
           tickLine={false}
-          tickFormatter={(v) => formatCurrency(v, 0)}
+          tickFormatter={(v) => formatCurrency(Number(v), 0)}
           width={80}
         />
         <Tooltip
@@ -47,7 +65,7 @@ export function NetWorthChart({ data, goalLines = [] }: { data: NetWorthPoint[];
         <Area
           type="monotone"
           dataKey="netWorth"
-          name="Net Worth"
+          name={seriesName}
           stroke={NET_WORTH_COLOR}
           fill={NET_WORTH_COLOR}
           fillOpacity={0.12}
@@ -65,6 +83,19 @@ export function NetWorthChart({ data, goalLines = [] }: { data: NetWorthPoint[];
           dot={false}
           connectNulls
         />
+        {goalSeries.map((g) => (
+          <Line
+            key={g.id}
+            type="monotone"
+            dataKey={`goal_${g.id}`}
+            name={g.name}
+            stroke={g.color}
+            strokeWidth={1.5}
+            strokeDasharray="4 3"
+            dot={false}
+            connectNulls
+          />
+        ))}
         {goalLines.map((g) => (
           <ReferenceLine
             key={g.id}

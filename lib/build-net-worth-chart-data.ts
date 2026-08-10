@@ -1,13 +1,16 @@
 import { format } from "date-fns";
 import { parseLocalDate, quarterToDate, toDateInputValue } from "@/lib/date-utils";
+import type { BalancePoint } from "@/lib/goals";
 import type { NetWorthPoint } from "@/components/charts/net-worth-chart";
 
 type Snapshot = { date: string; net_worth: number };
 type Target = { quarter: string; target_net_worth: number };
+export type GoalCurve = { id: number; points: BalancePoint[] };
 
 export function buildNetWorthChartData(
   snapshots: Snapshot[],
   targets: Target[],
+  goalCurves: GoalCurve[] = [],
 ): NetWorthPoint[] {
   const byDate = new Map<string, NetWorthPoint>();
 
@@ -25,6 +28,12 @@ export function buildNetWorthChartData(
   for (const t of targets) {
     const date = toDateInputValue(quarterToDate(t.quarter));
     getRow(date).target = t.target_net_worth;
+  }
+  for (const gc of goalCurves) {
+    const key = `goal_${gc.id}`;
+    for (const point of gc.points) {
+      getRow(point.date)[key] = point.balance;
+    }
   }
 
   return Array.from(byDate.values()).sort((a, b) => (a.date < b.date ? -1 : 1));

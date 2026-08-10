@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { BalanceHistoryChart, type GoalLine } from "@/components/charts/balance-history-chart";
+import { BalanceHistoryChart, type BalancePoint, type GoalLine, type GoalSeries } from "@/components/charts/balance-history-chart";
 import { getAccountColor } from "@/lib/chart-colors";
 import { parseLocalDate } from "@/lib/date-utils";
+import type { BalancePoint as GoalCurvePoint } from "@/lib/goals";
 import {
   Select,
   SelectContent,
@@ -22,10 +23,14 @@ export function BalanceHistorySection({
   accounts,
   history,
   goalLinesByAccount = {},
+  goalSeriesByAccount = {},
+  goalCurvesByAccount = {},
 }: {
   accounts: AccountOption[];
   history: HistoryRow[];
   goalLinesByAccount?: Record<number, GoalLine[]>;
+  goalSeriesByAccount?: Record<number, GoalSeries[]>;
+  goalCurvesByAccount?: Record<number, { id: number; points: GoalCurvePoint[] }[]>;
 }) {
   const [selectedId, setSelectedId] = useState<string>(accounts[0] ? String(accounts[0].id) : "");
 
@@ -41,11 +46,23 @@ export function BalanceHistorySection({
     [history, selectedId],
   );
 
-  const chartData = rows.map((r) => ({
-    date: r.as_of_date,
-    label: format(parseLocalDate(r.as_of_date), "MMM d, yyyy"),
-    balance: r.balance,
-  }));
+  const chartData = useMemo(() => {
+    const curves = goalCurvesByAccount[Number(selectedId)] ?? [];
+    const byDate = new Map<string, BalancePoint>();
+    function getRow(date: string): BalancePoint {
+      const existing = byDate.get(date);
+      if (existing) return existing;
+      const row: BalancePoint = { date, label: format(parseLocalDate(date), "MMM d, yyyy"), balance: null };
+      byDate.set(date, row);
+      return row;
+    }
+    for (const r of rows) getRow(r.as_of_date).balance = r.balance;
+    for (const curve of curves) {
+      const key = `goal_${curve.id}`;
+      for (const point of curve.points) getRow(point.date)[key] = point.balance;
+    }
+    return Array.from(byDate.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
+  }, [rows, goalCurvesByAccount, selectedId]);
 
   if (accounts.length === 0) return null;
 
@@ -76,6 +93,7 @@ export function BalanceHistorySection({
             data={chartData}
             color={color}
             goalLines={goalLinesByAccount[Number(selectedId)] ?? []}
+            goalSeries={goalSeriesByAccount[Number(selectedId)] ?? []}
           />
           <div className="max-h-64 overflow-auto rounded-md border">
             <Table>
