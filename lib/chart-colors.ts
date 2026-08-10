@@ -41,7 +41,6 @@ const FLOW_CATEGORY_COLOR_MAP: Record<string, string> = {
   Other: FLOW_PALETTE[4],
 };
 
-export const TARGET_LINE_COLOR = "var(--chart-target)"; // reference line, not a data series
 export const DELTA_GOOD_COLOR = "var(--chart-delta-good)";
 export const DELTA_BAD_COLOR = "var(--chart-delta-bad)";
 

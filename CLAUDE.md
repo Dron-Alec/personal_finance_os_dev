@@ -78,16 +78,19 @@ started fresh) — re-enter it via Data Entry once each account exists.
   `0004_account_template_defaults.sql`. All four are already applied to the
   live project — run them in order against any fresh project.
 - Tables: `accounts`, `account_balance_history`, `account_templates`,
-  `transactions`, `nw_snapshots`, `category_rules`, `nw_targets` — all
-  scoped by `user_id`, RLS enabled + forced on every table.
+  `transactions`, `nw_snapshots`, `category_rules`, `goals` — all scoped by
+  `user_id`, RLS enabled + forced on every table.
 - `accounts` has a unique constraint on `(user_id, name)`; account `type` is
   set at creation only — the app never updates it once created.
   `account_templates` has the same `(user_id, name)` uniqueness but is
   fully editable (it's just suggestions, not real balances).
-- `handle_new_user()` trigger seeds `category_rules`, `nw_targets`, and
-  `account_templates` for every new signup (default keyword map, the
-  historical target curve, and starter suggestions: Checking, Savings,
-  Coinbase/Crypto, 401k, Roth IRA, Taxable Brokerage, Other Investments).
+- `handle_new_user()` trigger seeds `category_rules` and `account_templates`
+  for every new signup (default keyword map, and starter suggestions:
+  Checking, Savings, Coinbase/Crypto, 401k, Roth IRA, Taxable Brokerage,
+  Other Investments). `nw_targets` (a quarterly target curve) was dropped in
+  migration `0017_drop_nw_targets.sql` — superseded by Goals, which cover
+  the same "target amount by date" job with contribution plans and chart
+  overlays.
 - Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (see
   `.env.local.example`) — already set in `.env.local` for the live project.
 

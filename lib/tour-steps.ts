@@ -54,7 +54,7 @@ export const TOUR_STEPS: TourStep[] = [
     path: "/net-worth",
     target: "nw-chart",
     title: "Net Worth Chart",
-    body: "Your net worth over time, with your quarterly target curve overlaid as a dashed line. Appears once you have at least one snapshot; edit targets in Settings.",
+    body: "Your net worth over time. Filter by date range or by which accounts count toward the line, and any goal with a contribution plan overlays its projected trajectory automatically. Appears once you have at least one snapshot.",
   },
   {
     id: "goals",
@@ -111,13 +111,6 @@ export const TOUR_STEPS: TourStep[] = [
     target: "category-rules",
     title: 'Category Rules (the "buckets")',
     body: "Each category has an ordered list of comma-separated keywords — the first keyword that matches a transaction's description (case-insensitive) wins. Saving re-categorizes every existing transaction against the updated rules.",
-  },
-  {
-    id: "targets",
-    path: "/settings",
-    target: "targets",
-    title: "Net Worth Targets",
-    body: "Edited as plain CSV text, one quarter,target_net_worth line per row. This is what draws the dashed target line on the Net Worth chart.",
   },
   {
     id: "danger-zone",

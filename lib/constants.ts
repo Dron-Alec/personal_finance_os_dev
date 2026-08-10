@@ -138,25 +138,3 @@ export const DEFAULT_CATEGORY_RULES: CategoryRule[] = [
     ],
   },
 ];
-
-// Ported from targets.csv — seeded per-user on signup into nw_targets.
-export const DEFAULT_NW_TARGETS: { quarter: string; target_net_worth: number }[] = [
-  { quarter: "2025-Q3", target_net_worth: 37572.5 },
-  { quarter: "2025-Q4", target_net_worth: 45000.0 },
-  { quarter: "2026-Q1", target_net_worth: 55000.0 },
-  { quarter: "2026-Q2", target_net_worth: 68000.0 },
-  { quarter: "2026-Q3", target_net_worth: 85000.0 },
-  { quarter: "2026-Q4", target_net_worth: 105000.0 },
-  { quarter: "2027-Q1", target_net_worth: 135000.0 },
-  { quarter: "2027-Q2", target_net_worth: 175000.0 },
-  { quarter: "2027-Q3", target_net_worth: 225000.0 },
-  { quarter: "2027-Q4", target_net_worth: 290000.0 },
-  { quarter: "2028-Q1", target_net_worth: 375000.0 },
-  { quarter: "2028-Q2", target_net_worth: 475000.0 },
-  { quarter: "2028-Q3", target_net_worth: 595000.0 },
-  { quarter: "2028-Q4", target_net_worth: 735000.0 },
-  { quarter: "2029-Q1", target_net_worth: 890000.0 },
-  { quarter: "2029-Q2", target_net_worth: 1050000.0 },
-  { quarter: "2029-Q3", target_net_worth: 1190000.0 },
-  { quarter: "2029-Q4", target_net_worth: 1312500.0 },
-];

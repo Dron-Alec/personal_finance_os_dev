@@ -19,14 +19,11 @@ const RANGE_PRESETS: { label: string; months: number | null }[] = [
 export type AccountOption = { id: number; name: string };
 export type HistoryRow = { account_id: number; balance: number; as_of_date: string };
 export type SnapshotRow = { date: string; net_worth: number };
-export type TargetRow = { quarter: string; target_net_worth: number };
 
 export function NetWorthChartSection({
   accounts,
   history,
   snapshots,
-  targets,
-  currentQuarter,
   goalLines,
   goalSeries,
   goalCurves,
@@ -34,8 +31,6 @@ export function NetWorthChartSection({
   accounts: AccountOption[];
   history: HistoryRow[];
   snapshots: SnapshotRow[]; // sorted ascending
-  targets: TargetRow[];
-  currentQuarter: string;
   goalLines: GoalLine[];
   goalSeries: GoalSeries[];
   goalCurves: GoalCurve[];
@@ -61,12 +56,11 @@ export function NetWorthChartSection({
 
   const latest = filteredSeries.at(-1);
   const prev = filteredSeries.at(-2);
-  const target = targets.find((t) => t.quarter === currentQuarter);
 
-  // Target line + goal overlays are scoped to *total* net worth — showing
-  // them against a filtered subset would compare apples to oranges, so they
-  // only render when every account is included. Within that, each goal can
-  // still be toggled off individually (on by default).
+  // Goal overlays are scoped to *total* net worth — showing them against a
+  // filtered subset would compare apples to oranges, so they only render
+  // when every account is included. Within that, each goal can still be
+  // toggled off individually (on by default).
   const chartGoalLines = allSelected ? goalLines.filter((g) => activeGoalIds.includes(g.id)) : [];
   const chartGoalSeries = allSelected ? goalSeries.filter((g) => activeGoalIds.includes(g.id)) : [];
 
@@ -74,10 +68,9 @@ export function NetWorthChartSection({
     const chartGoalCurves = allSelected ? goalCurves.filter((c) => activeGoalIds.includes(c.id)) : [];
     return buildNetWorthChartData(
       filteredSeries.map((p) => ({ date: p.date, net_worth: p.value })),
-      allSelected ? targets : [],
       chartGoalCurves,
     );
-  }, [filteredSeries, allSelected, targets, goalCurves, activeGoalIds]);
+  }, [filteredSeries, allSelected, goalCurves, activeGoalIds]);
 
   const data = useMemo(() => {
     if (rangeMonths === null) return rawData;
@@ -107,24 +100,13 @@ export function NetWorthChartSection({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader>
             <CardDescription>{allSelected ? "Current Net Worth" : "Selected Accounts Total"}</CardDescription>
             <CardTitle className="text-2xl">{formatCurrency(latest?.value ?? 0, 0)}</CardTitle>
           </CardHeader>
         </Card>
-        {allSelected && target && latest && (
-          <Card>
-            <CardHeader>
-              <CardDescription>{currentQuarter} Target</CardDescription>
-              <CardTitle className="text-2xl">{formatCurrency(target.target_net_worth, 0)}</CardTitle>
-              <CardDescription>
-                {formatSignedCurrency(latest.value - target.target_net_worth, 0)} vs. target
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        )}
         {prev && latest && (
           <Card>
             <CardHeader>

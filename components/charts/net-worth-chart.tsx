@@ -13,13 +13,12 @@ import {
   YAxis,
 } from "recharts";
 import { formatCurrency } from "@/lib/format";
-import { AXIS_COLOR, CATEGORICAL_PALETTE, GRID_COLOR, TARGET_LINE_COLOR } from "@/lib/chart-colors";
+import { AXIS_COLOR, CATEGORICAL_PALETTE, GRID_COLOR } from "@/lib/chart-colors";
 
 export type NetWorthPoint = {
   date: string; // YYYY-MM-DD
   label: string; // formatted for axis/tooltip
   netWorth: number | null;
-  target: number | null;
   [key: string]: string | number | null;
 };
 
@@ -71,16 +70,6 @@ export function NetWorthChart({
           fillOpacity={0.12}
           strokeWidth={2.5}
           dot={{ r: 3 }}
-          connectNulls
-        />
-        <Line
-          type="monotone"
-          dataKey="target"
-          name="Target"
-          stroke={TARGET_LINE_COLOR}
-          strokeWidth={2}
-          strokeDasharray="6 4"
-          dot={false}
           connectNulls
         />
         {goalSeries.map((g) => (

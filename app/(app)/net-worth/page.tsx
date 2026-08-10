@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { currentQuarter } from "@/lib/date-utils";
 import { buildAccountOverlayData } from "@/lib/build-account-overlay-data";
 import { computeGoalProgress, projectGoalCurve, type Goal } from "@/lib/goals";
 import { CATEGORICAL_PALETTE } from "@/lib/chart-colors";
@@ -16,18 +15,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default async function NetWorthPage() {
   const supabase = await createClient();
 
-  const [{ data: snapshots }, { data: targets }, { data: goals }, { data: accounts }, { data: history }] =
-    await Promise.all([
-      supabase.from("nw_snapshots").select("id, date, net_worth, note").order("date"),
-      supabase.from("nw_targets").select("quarter, target_net_worth").order("quarter"),
-      supabase.from("goals").select("*").order("created_at"),
-      supabase.from("accounts").select("id, name, balance").order("name"),
-      supabase.from("account_balance_history").select("account_id, balance, as_of_date"),
-    ]);
+  const [{ data: snapshots }, { data: goals }, { data: accounts }, { data: history }] = await Promise.all([
+    supabase.from("nw_snapshots").select("id, date, net_worth, note").order("date"),
+    supabase.from("goals").select("*").order("created_at"),
+    supabase.from("accounts").select("id, name, balance").order("name"),
+    supabase.from("account_balance_history").select("account_id, balance, as_of_date"),
+  ]);
 
   const sortedSnapshots = [...(snapshots ?? [])].sort((a, b) => (a.date < b.date ? -1 : 1));
   const latest = sortedSnapshots.at(-1);
-  const cq = currentQuarter();
 
   const accountList = accounts ?? [];
   const accountsById = new Map(accountList.map((a) => [a.id, a]));
@@ -98,8 +94,6 @@ export default async function NetWorthPage() {
           accounts={accountList}
           history={historyList}
           snapshots={sortedSnapshots}
-          targets={targets ?? []}
-          currentQuarter={cq}
           goalLines={netWorthGoalLines}
           goalSeries={netWorthGoalSeries}
           goalCurves={netWorthGoalCurves}
