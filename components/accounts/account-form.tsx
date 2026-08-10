@@ -57,6 +57,13 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
   const isNew = selected === ADD_NEW;
   const existing = !isNew ? accounts.find((a) => String(a.id) === selected) : undefined;
 
+  // Base UI's Select only renders the selected item's *label* in the
+  // trigger (instead of the raw value) when given an explicit items map.
+  const accountItems = [
+    ...accounts.map((a) => ({ value: String(a.id), label: a.name })),
+    { value: ADD_NEW, label: "＋ Add new account" },
+  ];
+
   return (
     <form ref={formRef} action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="mode" value={isNew ? "create" : "update"} />
@@ -64,7 +71,7 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
 
       <div className="flex flex-col gap-1.5 sm:max-w-xs">
         <Label>Account</Label>
-        <Select value={selected} onValueChange={(v) => setSelected(v ?? ADD_NEW)}>
+        <Select items={accountItems} value={selected} onValueChange={(v) => setSelected(v ?? ADD_NEW)}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>

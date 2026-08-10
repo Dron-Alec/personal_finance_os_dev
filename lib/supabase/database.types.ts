@@ -61,9 +61,10 @@ export interface Database {
           name: string;
           scope_type: string;
           account_id: number | null;
-          starting_amount: number;
           target_amount: number;
           target_date: string;
+          contribution_model: string | null;
+          contribution_params: Json;
           created_at: string;
         };
         Insert: {
@@ -72,9 +73,10 @@ export interface Database {
           name: string;
           scope_type: string;
           account_id?: number | null;
-          starting_amount?: number;
           target_amount: number;
           target_date: string;
+          contribution_model?: string | null;
+          contribution_params?: Json;
           created_at?: string;
         };
         Update: {
@@ -83,9 +85,10 @@ export interface Database {
           name?: string;
           scope_type?: string;
           account_id?: number | null;
-          starting_amount?: number;
           target_amount?: number;
           target_date?: string;
+          contribution_model?: string | null;
+          contribution_params?: Json;
           created_at?: string;
         };
         Relationships: [

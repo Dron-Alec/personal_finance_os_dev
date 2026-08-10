@@ -29,27 +29,14 @@ export async function saveGoal(_prevState: SaveGoalResult, formData: FormData): 
     return { error: "Pick an account for an account-scoped goal." };
   }
 
-  let startingAmount = 0;
-  if (scopeType === "account" && accountId) {
-    const { data: account } = await supabase.from("accounts").select("balance").eq("id", accountId).single();
-    if (!account) return { error: "Account not found." };
-    startingAmount = Number(account.balance);
-  } else {
-    const { data: snapshot } = await supabase
-      .from("nw_snapshots")
-      .select("net_worth")
-      .order("date", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    startingAmount = snapshot ? Number(snapshot.net_worth) : 0;
-  }
-
+  // No starting-balance lookup needed — progress is always computed live
+  // from current balances + history (lib/goals.ts), never from a value
+  // frozen at creation time.
   const { error } = await supabase.from("goals").insert({
     user_id: user.id,
     name,
     scope_type: scopeType,
     account_id: scopeType === "account" ? accountId : null,
-    starting_amount: startingAmount,
     target_amount: targetAmount,
     target_date: targetDate,
   });

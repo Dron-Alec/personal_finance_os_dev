@@ -1,24 +1,38 @@
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/format";
-import { getAccountColor, getAccountTypeColor } from "@/lib/chart-colors";
+import { getAccountColor, getAccountTypeColor, CATEGORICAL_PALETTE } from "@/lib/chart-colors";
 import { AccountForm } from "@/components/accounts/account-form";
 import { AccountsTable } from "@/components/accounts/accounts-table";
 import { BalanceHistorySection } from "@/components/accounts/balance-history-section";
 import { BreakdownPieChart } from "@/components/charts/breakdown-pie-chart";
 import { TotalsBarChart } from "@/components/charts/totals-bar-chart";
+import type { GoalLine } from "@/components/charts/balance-history-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function AccountsPage() {
   const supabase = await createClient();
 
-  const [{ data: accounts }, { data: history }] = await Promise.all([
+  const [{ data: accounts }, { data: history }, { data: goals }] = await Promise.all([
     supabase.from("accounts").select("id, name, type, balance, as_of_date, bank_format").order("id"),
     supabase.from("account_balance_history").select("account_id, balance, as_of_date"),
+    supabase.from("goals").select("id, name, account_id, target_amount").eq("scope_type", "account"),
   ]);
 
   const accountList = accounts ?? [];
   const sortedIds = [...accountList].map((a) => a.id).sort((a, b) => a - b);
   const total = accountList.reduce((sum, a) => sum + Number(a.balance), 0);
+
+  const goalLinesByAccount: Record<number, GoalLine[]> = {};
+  (goals ?? []).forEach((g, index) => {
+    if (g.account_id === null) return;
+    const line: GoalLine = {
+      id: g.id,
+      name: g.name,
+      targetAmount: Number(g.target_amount),
+      color: CATEGORICAL_PALETTE[index % CATEGORICAL_PALETTE.length],
+    };
+    (goalLinesByAccount[g.account_id] ??= []).push(line);
+  });
 
   const pieData = accountList.map((a) => ({
     name: a.name,
@@ -86,7 +100,11 @@ export default async function AccountsPage() {
               <CardTitle>Balance History</CardTitle>
             </CardHeader>
             <CardContent>
-              <BalanceHistorySection accounts={accountList} history={history ?? []} />
+              <BalanceHistorySection
+                accounts={accountList}
+                history={history ?? []}
+                goalLinesByAccount={goalLinesByAccount}
+              />
             </CardContent>
           </Card>
         </>

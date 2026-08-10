@@ -4,7 +4,8 @@ import { formatCurrency, formatSignedCurrency } from "@/lib/format";
 import { buildNetWorthChartData } from "@/lib/build-net-worth-chart-data";
 import { buildAccountOverlayData } from "@/lib/build-account-overlay-data";
 import { computeGoalProgress, type Goal } from "@/lib/goals";
-import { NetWorthChart } from "@/components/charts/net-worth-chart";
+import { CATEGORICAL_PALETTE } from "@/lib/chart-colors";
+import { NetWorthChart, type GoalLine } from "@/components/charts/net-worth-chart";
 import { AccountOverlayChart } from "@/components/charts/account-overlay-chart";
 import { SnapshotForm } from "@/components/net-worth/snapshot-form";
 import { SnapshotHistory } from "@/components/net-worth/snapshot-history";
@@ -32,22 +33,35 @@ export default async function NetWorthPage() {
 
   const accountList = accounts ?? [];
   const accountsById = new Map(accountList.map((a) => [a.id, a]));
-  const latestNetWorth = latest?.net_worth ?? 0;
+  const latestNetWorth = Number(latest?.net_worth ?? 0);
+  const netWorthHistory = sortedSnapshots.map((s) => ({ date: s.date, balance: Number(s.net_worth) }));
+  const historyList = history ?? [];
 
   const goalRows = (goals ?? []) as Goal[];
-  const goalCards = goalRows.map((goal) => {
-    const currentValue =
-      goal.scope_type === "account"
-        ? Number(accountsById.get(goal.account_id ?? -1)?.balance ?? 0)
-        : Number(latestNetWorth);
-    const scopeLabel =
-      goal.scope_type === "account"
-        ? (accountsById.get(goal.account_id ?? -1)?.name ?? "Deleted account")
-        : "Net Worth (aggregate)";
-    return { goal, progress: computeGoalProgress(goal, currentValue), scopeLabel };
+  const goalCards = goalRows.map((goal, index) => {
+    const isAccount = goal.scope_type === "account";
+    const currentValue = isAccount ? Number(accountsById.get(goal.account_id ?? -1)?.balance ?? 0) : latestNetWorth;
+    const balanceHistory = isAccount
+      ? historyList
+          .filter((h) => h.account_id === goal.account_id)
+          .map((h) => ({ date: h.as_of_date, balance: Number(h.balance) }))
+      : netWorthHistory;
+    const scopeLabel = isAccount
+      ? (accountsById.get(goal.account_id ?? -1)?.name ?? "Deleted account")
+      : "Net Worth (aggregate)";
+    return {
+      goal,
+      progress: computeGoalProgress(goal, currentValue, balanceHistory),
+      scopeLabel,
+      color: CATEGORICAL_PALETTE[index % CATEGORICAL_PALETTE.length],
+    };
   });
 
-  const overlayData = buildAccountOverlayData(accountList, history ?? []);
+  const netWorthGoalLines: GoalLine[] = goalCards
+    .filter(({ goal }) => goal.scope_type === "net_worth")
+    .map(({ goal, color }) => ({ id: goal.id, name: goal.name, targetAmount: goal.target_amount, color }));
+
+  const overlayData = buildAccountOverlayData(accountList, historyList);
 
   return (
     <div className="flex flex-col gap-6">
@@ -69,7 +83,10 @@ export default async function NetWorthPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <GoalForm accounts={accountList} />
+          <GoalForm
+            accounts={accountList.map((a) => ({ id: a.id, name: a.name, balance: Number(a.balance) }))}
+            netWorthCurrent={latestNetWorth}
+          />
           {goalCards.length > 0 && (
             <div className="grid gap-3 sm:grid-cols-2">
               {goalCards.map(({ goal, progress, scopeLabel }) => (
@@ -132,7 +149,10 @@ export default async function NetWorthPage() {
 
           <Card data-tour="nw-chart">
             <CardContent>
-              <NetWorthChart data={buildNetWorthChartData(sortedSnapshots, targets ?? [])} />
+              <NetWorthChart
+                data={buildNetWorthChartData(sortedSnapshots, targets ?? [])}
+                goalLines={netWorthGoalLines}
+              />
             </CardContent>
           </Card>
 

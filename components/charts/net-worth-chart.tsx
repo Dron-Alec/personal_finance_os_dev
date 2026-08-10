@@ -6,6 +6,7 @@ import {
   ComposedChart,
   Legend,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -21,9 +22,11 @@ export type NetWorthPoint = {
   target: number | null;
 };
 
+export type GoalLine = { id: number; name: string; targetAmount: number; color: string };
+
 const NET_WORTH_COLOR = CATEGORICAL_PALETTE[0];
 
-export function NetWorthChart({ data }: { data: NetWorthPoint[] }) {
+export function NetWorthChart({ data, goalLines = [] }: { data: NetWorthPoint[]; goalLines?: GoalLine[] }) {
   return (
     <ResponsiveContainer width="100%" height={380}>
       <ComposedChart data={data} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
@@ -62,6 +65,16 @@ export function NetWorthChart({ data }: { data: NetWorthPoint[] }) {
           dot={false}
           connectNulls
         />
+        {goalLines.map((g) => (
+          <ReferenceLine
+            key={g.id}
+            y={g.targetAmount}
+            stroke={g.color}
+            strokeDasharray="3 3"
+            strokeWidth={1.5}
+            label={{ value: g.name, position: "insideTopRight", fontSize: 11, fill: g.color }}
+          />
+        ))}
       </ComposedChart>
     </ResponsiveContainer>
   );

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { BalanceHistoryChart } from "@/components/charts/balance-history-chart";
+import { BalanceHistoryChart, type GoalLine } from "@/components/charts/balance-history-chart";
 import { getAccountColor } from "@/lib/chart-colors";
 import { parseLocalDate } from "@/lib/date-utils";
 import {
@@ -21,14 +21,17 @@ export type AccountOption = { id: number; name: string };
 export function BalanceHistorySection({
   accounts,
   history,
+  goalLinesByAccount = {},
 }: {
   accounts: AccountOption[];
   history: HistoryRow[];
+  goalLinesByAccount?: Record<number, GoalLine[]>;
 }) {
   const [selectedId, setSelectedId] = useState<string>(accounts[0] ? String(accounts[0].id) : "");
 
   const sortedIds = useMemo(() => accounts.map((a) => a.id).sort((a, b) => a - b), [accounts]);
   const color = getAccountColor(Number(selectedId), sortedIds);
+  const accountItems = accounts.map((a) => ({ value: String(a.id), label: a.name }));
 
   const rows = useMemo(
     () =>
@@ -49,7 +52,7 @@ export function BalanceHistorySection({
   return (
     <div className="flex flex-col gap-4">
       <div className="max-w-xs">
-        <Select value={selectedId} onValueChange={(v) => setSelectedId(v ?? "")}>
+        <Select items={accountItems} value={selectedId} onValueChange={(v) => setSelectedId(v ?? "")}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -69,7 +72,11 @@ export function BalanceHistorySection({
         </p>
       ) : (
         <>
-          <BalanceHistoryChart data={chartData} color={color} />
+          <BalanceHistoryChart
+            data={chartData}
+            color={color}
+            goalLines={goalLinesByAccount[Number(selectedId)] ?? []}
+          />
           <div className="max-h-64 overflow-auto rounded-md border">
             <Table>
               <TableHeader>
