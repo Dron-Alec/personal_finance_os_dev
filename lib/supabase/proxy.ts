@@ -5,6 +5,10 @@ import type { Database } from "./database.types";
 const PUBLIC_PATHS = new Set(["/login", "/signup"]);
 const MFA_ENROLL_PATH = "/mfa/enroll";
 const MFA_CHALLENGE_PATH = "/mfa/challenge";
+// Unlike PUBLIC_PATHS (exact-match, redirects away once fully
+// authenticated), /invite/[token] must stay reachable both logged-out and
+// logged-in — the page itself branches on auth state.
+const INVITE_PATH_PREFIX = "/invite/";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -39,11 +43,12 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
   const isPublicPath = PUBLIC_PATHS.has(pathname);
+  const isInvitePath = pathname.startsWith(INVITE_PATH_PREFIX);
 
   if (!user) {
-    if (!isPublicPath) {
+    if (!isPublicPath && !isInvitePath) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       return NextResponse.redirect(url);
@@ -61,6 +66,7 @@ export async function updateSession(request: NextRequest) {
     if (pathname !== MFA_ENROLL_PATH) {
       const url = request.nextUrl.clone();
       url.pathname = MFA_ENROLL_PATH;
+      url.search = `?redirect=${encodeURIComponent(pathname + search)}`;
       return NextResponse.redirect(url);
     }
     return supabaseResponse;
@@ -70,6 +76,7 @@ export async function updateSession(request: NextRequest) {
     if (pathname !== MFA_CHALLENGE_PATH) {
       const url = request.nextUrl.clone();
       url.pathname = MFA_CHALLENGE_PATH;
+      url.search = `?redirect=${encodeURIComponent(pathname + search)}`;
       return NextResponse.redirect(url);
     }
     return supabaseResponse;

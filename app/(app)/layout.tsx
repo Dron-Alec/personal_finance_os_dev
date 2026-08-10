@@ -3,6 +3,8 @@ import { signOut } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ProductTour } from "@/components/product-tour";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentHouseholdId } from "@/lib/households";
 
 const NAV_ITEMS = [
   { href: "/data-entry", label: "📋 Data Entry" },
@@ -12,7 +14,32 @@ const NAV_ITEMS = [
   { href: "/settings", label: "⚙️ Settings" },
 ];
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+const COMBINED_NAV_ITEM = { href: "/combined", label: "🔗 Combined" };
+
+// Re-run on every navigation (no extra caching beyond Next's normal RSC
+// behavior) — combined with revalidatePath("/", "layout") in
+// acceptInvite/revokeLink, this is what makes the tab appear/disappear
+// immediately rather than only on the next full page load.
+async function hasActiveHouseholdLink(): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const householdId = await getCurrentHouseholdId(supabase, user.id);
+  const { count } = await supabase
+    .from("household_links")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "active")
+    .or(`household_a_id.eq.${householdId},household_b_id.eq.${householdId}`);
+  return (count ?? 0) > 0;
+}
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const showCombined = await hasActiveHouseholdLink();
+  const navItems = showCombined ? [...NAV_ITEMS, COMBINED_NAV_ITEM] : NAV_ITEMS;
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-b">
@@ -30,7 +57,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <nav className="mx-auto flex max-w-6xl justify-center gap-1 overflow-x-auto px-4 pb-2">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}

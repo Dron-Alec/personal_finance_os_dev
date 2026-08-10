@@ -6,14 +6,11 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentHouseholdId } from "@/lib/households";
 
-export type InviteResult = { error: string } | { error?: undefined; inviteUrl: string };
+export type InviteResult = { error: string } | { error?: undefined; inviteUrl?: string };
 
 const inviteSchema = z.object({ email: z.string().trim().email("Enter a valid email.") });
 
-export async function inviteToHousehold(
-  _prevState: InviteResult | { error?: undefined },
-  formData: FormData,
-): Promise<InviteResult> {
+export async function inviteToHousehold(_prevState: InviteResult, formData: FormData): Promise<InviteResult> {
   const supabase = await createClient();
   const {
     data: { user },

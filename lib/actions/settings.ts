@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentHouseholdId } from "@/lib/households";
 import { categorizeTransaction } from "@/lib/categorize";
@@ -51,54 +50,6 @@ export async function saveCategoryRules(
 
   revalidatePath("/settings");
   revalidatePath("/spending");
-  return {};
-}
-
-const targetsRowSchema = z.object({
-  quarter: z.string().regex(/^\d{4}-Q[1-4]$/, "Quarter must look like 2026-Q1"),
-  target_net_worth: z.coerce.number(),
-});
-
-export type SaveTargetsResult = { error: string } | { error?: undefined };
-
-export async function saveTargets(
-  _prevState: SaveTargetsResult,
-  formData: FormData,
-): Promise<SaveTargetsResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated." };
-
-  const csv = String(formData.get("targetsCsv") ?? "");
-  const lines = csv
-    .split(/\r\n|\n|\r/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  const dataLines = lines[0]?.toLowerCase().startsWith("quarter") ? lines.slice(1) : lines;
-
-  const rows: { user_id: string; quarter: string; target_net_worth: number }[] = [];
-  for (const line of dataLines) {
-    const [quarter, value] = line.split(",").map((s) => s.trim());
-    const parsed = targetsRowSchema.safeParse({ quarter, target_net_worth: value });
-    if (!parsed.success) {
-      return { error: `Invalid row "${line}": ${parsed.error.issues[0]?.message}` };
-    }
-    rows.push({ user_id: user.id, ...parsed.data });
-  }
-
-  const { error: deleteError } = await supabase.from("nw_targets").delete().eq("user_id", user.id);
-  if (deleteError) return { error: deleteError.message };
-
-  if (rows.length > 0) {
-    const { error: insertError } = await supabase.from("nw_targets").insert(rows);
-    if (insertError) return { error: insertError.message };
-  }
-
-  revalidatePath("/settings");
-  revalidatePath("/net-worth");
   return {};
 }
 

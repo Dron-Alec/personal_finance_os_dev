@@ -1,5 +1,5 @@
 // Generated via `mcp__plugin_supabase_supabase__generate_typescript_types`
-// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0016.
+// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0017.
 // Regenerate the same way after any schema change rather than hand-editing.
 
 export type Json =
@@ -418,24 +418,6 @@ export type Database = {
           id?: never
           net_worth?: number
           note?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      nw_targets: {
-        Row: {
-          quarter: string
-          target_net_worth: number
-          user_id: string
-        }
-        Insert: {
-          quarter: string
-          target_net_worth: number
-          user_id?: string
-        }
-        Update: {
-          quarter?: string
-          target_net_worth?: number
           user_id?: string
         }
         Relationships: []

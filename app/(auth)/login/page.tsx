@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -27,6 +27,8 @@ type FormValues = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
   const [error, setError] = useState<string | null>(null);
   const {
     register,
@@ -42,7 +44,7 @@ export default function LoginPage() {
       setError(error.message);
       return;
     }
-    router.push("/");
+    router.push(redirect || "/");
     router.refresh();
   }
 
@@ -80,7 +82,13 @@ export default function LoginPage() {
             </Button>
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            No account? <Link href="/signup" className="underline">Sign up</Link>
+            No account?{" "}
+            <Link
+              href={redirect ? `/signup?redirect=${encodeURIComponent(redirect)}` : "/signup"}
+              className="underline"
+            >
+              Sign up
+            </Link>
           </p>
         </CardContent>
       </Card>

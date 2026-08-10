@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -33,6 +33,8 @@ type FormValues = z.infer<typeof schema>;
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
   const [error, setError] = useState<string | null>(null);
   const [checkEmail, setCheckEmail] = useState(false);
   const {
@@ -57,7 +59,7 @@ export default function SignupPage() {
       setCheckEmail(true);
       return;
     }
-    router.push("/mfa/enroll");
+    router.push(redirect ? `/mfa/enroll?redirect=${encodeURIComponent(redirect)}` : "/mfa/enroll");
     router.refresh();
   }
 
@@ -122,7 +124,13 @@ export default function SignupPage() {
                 </Button>
               </form>
               <p className="mt-4 text-center text-sm text-muted-foreground">
-                Already have an account? <Link href="/login" className="underline">Sign in</Link>
+                Already have an account?{" "}
+                <Link
+                  href={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : "/login"}
+                  className="underline"
+                >
+                  Sign in
+                </Link>
               </p>
             </>
           )}

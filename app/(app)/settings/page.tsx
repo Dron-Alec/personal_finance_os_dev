@@ -1,25 +1,43 @@
 import { InfoIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentHouseholdId } from "@/lib/households";
 import { DEFAULT_CATEGORY_RULES } from "@/lib/constants";
 import { clearTransactions, resetAllData } from "@/lib/actions/settings";
 import { CategoryRulesForm } from "@/components/settings/category-rules-form";
-import { TargetsForm } from "@/components/settings/targets-form";
+import { HouseholdSection } from "@/components/settings/household-section";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const householdId = user ? await getCurrentHouseholdId(supabase, user.id) : null;
 
-  const [{ data: ruleRow }, { data: targets }] = await Promise.all([
+  const [{ data: ruleRow }, { data: invites }, { data: links }] = await Promise.all([
     supabase.from("category_rules").select("rules").single(),
-    supabase.from("nw_targets").select("quarter, target_net_worth").order("quarter"),
+    householdId
+      ? supabase
+          .from("household_invites")
+          .select("id, invited_email, expires_at")
+          .eq("household_id", householdId)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    householdId
+      ? supabase
+          .from("household_links")
+          .select("id, created_at")
+          .eq("status", "active")
+          .or(`household_a_id.eq.${householdId},household_b_id.eq.${householdId}`)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
   ]);
 
   const rules = ruleRow?.rules ?? DEFAULT_CATEGORY_RULES;
-  const targetsCsv = [
-    "quarter,target_net_worth",
-    ...(targets ?? []).map((t) => `${t.quarter},${t.target_net_worth}`),
-  ].join("\n");
+  const pendingInvites = (invites ?? []).map((i) => ({ id: i.id, invitedEmail: i.invited_email, expiresAt: i.expires_at }));
+  const activeLinks = (links ?? []).map((l) => ({ id: l.id, createdAt: l.created_at }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -35,13 +53,16 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card data-tour="targets">
+      <Card data-tour="household">
         <CardHeader>
-          <CardTitle>Net Worth Targets</CardTitle>
-          <CardDescription>Edit as CSV: quarter,target_net_worth</CardDescription>
+          <CardTitle>Household</CardTitle>
+          <CardDescription>
+            Link with someone to see a shared, category-level view — your individual
+            transactions are never shared, even when linked.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <TargetsForm csv={targetsCsv} />
+          <HouseholdSection pendingInvites={pendingInvites} activeLinks={activeLinks} />
         </CardContent>
       </Card>
 
