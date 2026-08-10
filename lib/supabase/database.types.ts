@@ -1,5 +1,5 @@
 // Generated via `mcp__plugin_supabase_supabase__generate_typescript_types`
-// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0014.
+// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0016.
 // Regenerate the same way after any schema change rather than hand-editing.
 
 export type Json =
@@ -58,6 +58,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_balance_history_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "household_account_balances"
+            referencedColumns: ["account_id"]
           },
         ]
       }
@@ -248,6 +255,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goals_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "household_account_balances"
+            referencedColumns: ["account_id"]
           },
         ]
       }
@@ -469,10 +483,95 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      household_account_balance_history: {
+        Row: {
+          account_id: number | null
+          as_of_date: string | null
+          balance: number | null
+          household_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_balance_history_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_balance_history_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "household_account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "accounts_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      household_account_balances: {
+        Row: {
+          account_id: number | null
+          account_name: string | null
+          account_type: string | null
+          as_of_date: string | null
+          balance: number | null
+          household_id: string | null
+        }
+        Insert: {
+          account_id?: number | null
+          account_name?: string | null
+          account_type?: string | null
+          as_of_date?: string | null
+          balance?: number | null
+          household_id?: string | null
+        }
+        Update: {
+          account_id?: number | null
+          account_name?: string | null
+          account_type?: string | null
+          as_of_date?: string | null
+          balance?: number | null
+          household_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      household_spending_summary: {
+        Row: {
+          category: string | null
+          household_id: string | null
+          month: string | null
+          total_amount: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      accept_household_invite: {
+        Args: { invite_token: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
