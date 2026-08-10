@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentHouseholdId } from "@/lib/households";
 import { BANK_FORMATS, DEFAULT_CATEGORY_RULES, type BankFormat, type CategoryRule } from "@/lib/constants";
 import { extractHeaderSample, parseCsvForBank } from "@/lib/csv-parsing";
 import { categorizeTransaction } from "@/lib/categorize";
@@ -60,6 +61,7 @@ export async function importCsv(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated." };
+  const householdId = await getCurrentHouseholdId(supabase, user.id);
 
   const bankFormatParsed = bankFormatSchema.safeParse(formData.get("bankFormat"));
   if (!bankFormatParsed.success) return { error: "Invalid statement format." };
@@ -84,7 +86,7 @@ export async function importCsv(
     customMapping = toColumnMapping(customFormat);
   }
 
-  const rows: { user_id: string; date: string; description: string; amount: number; bank: string; category: string }[] = [];
+  const rows: { household_id: string; date: string; description: string; amount: number; bank: string; category: string }[] = [];
   for (const file of files) {
     const text = await file.text();
     const parsed = customMapping
@@ -92,7 +94,7 @@ export async function importCsv(
       : parseCsvForBank(bankFormat as BankFormat, text);
     for (const tx of parsed) {
       rows.push({
-        user_id: user.id,
+        household_id: householdId,
         date: tx.date,
         description: tx.description,
         amount: tx.amount,
@@ -131,7 +133,7 @@ export async function importCsv(
   const { data: inserted, error } = await supabase
     .from("transactions")
     .upsert(rows, {
-      onConflict: "user_id,date,description,amount",
+      onConflict: "household_id,date,description,amount",
       ignoreDuplicates: true,
     })
     .select("id");

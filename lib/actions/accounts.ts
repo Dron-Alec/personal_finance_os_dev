@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { ACCOUNT_TYPES } from "@/lib/constants";
+import { getCurrentHouseholdId } from "@/lib/households";
 
 const createSchema = z.object({
   mode: z.literal("create"),
@@ -58,11 +59,12 @@ export async function saveAccount(
       return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
     }
     const { name, type, balance, asOfDate, bankFormat } = parsed.data;
+    const householdId = await getCurrentHouseholdId(supabase, user.id);
 
     const { data: account, error: insertError } = await supabase
       .from("accounts")
       .insert({
-        user_id: user.id,
+        household_id: householdId,
         name,
         type,
         balance,

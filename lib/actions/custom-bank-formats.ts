@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentHouseholdId } from "@/lib/households";
 import { DEFAULT_CATEGORY_RULES, type CategoryRule } from "@/lib/constants";
 import { extractHeaderSample } from "@/lib/csv-parsing";
 import { categorizeTransaction } from "@/lib/categorize";
@@ -40,6 +41,7 @@ export async function confirmCustomFormatAndImport(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated." };
+  const householdId = await getCurrentHouseholdId(supabase, user.id);
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Give this format a name (e.g. the bank's name)." };
@@ -68,13 +70,13 @@ export async function confirmCustomFormatAndImport(
   const { data: ruleRow } = await supabase.from("category_rules").select("rules").single();
   const rules: CategoryRule[] = ruleRow?.rules ?? DEFAULT_CATEGORY_RULES;
 
-  const rows: { user_id: string; date: string; description: string; amount: number; bank: string; category: string }[] = [];
+  const rows: { household_id: string; date: string; description: string; amount: number; bank: string; category: string }[] = [];
   for (const file of files) {
     const text = await file.text();
     const parsed = applyMapping(mapping, extractHeaderSample(text).rows);
     for (const tx of parsed) {
       rows.push({
-        user_id: user.id,
+        household_id: householdId,
         date: tx.date,
         description: tx.description,
         amount: tx.amount,
@@ -111,7 +113,7 @@ export async function confirmCustomFormatAndImport(
   const { data: inserted, error } = await supabase
     .from("transactions")
     .upsert(rows, {
-      onConflict: "user_id,date,description,amount",
+      onConflict: "household_id,date,description,amount",
       ignoreDuplicates: true,
     })
     .select("id");

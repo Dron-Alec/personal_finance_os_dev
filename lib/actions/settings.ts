@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentHouseholdId } from "@/lib/households";
 import { categorizeTransaction } from "@/lib/categorize";
 import type { CategoryRule } from "@/lib/constants";
 
@@ -108,7 +109,8 @@ export async function clearTransactions() {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated.");
 
-  const { error } = await supabase.from("transactions").delete().eq("user_id", user.id);
+  const householdId = await getCurrentHouseholdId(supabase, user.id);
+  const { error } = await supabase.from("transactions").delete().eq("household_id", householdId);
   if (error) throw new Error(error.message);
 
   revalidatePath("/data-entry");
@@ -122,9 +124,10 @@ export async function resetAllData() {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated.");
 
+  const householdId = await getCurrentHouseholdId(supabase, user.id);
   // account_balance_history cascades from accounts via FK.
-  await supabase.from("transactions").delete().eq("user_id", user.id);
-  await supabase.from("accounts").delete().eq("user_id", user.id);
+  await supabase.from("transactions").delete().eq("household_id", householdId);
+  await supabase.from("accounts").delete().eq("household_id", householdId);
   await supabase.from("nw_snapshots").delete().eq("user_id", user.id);
 
   revalidatePath("/data-entry");

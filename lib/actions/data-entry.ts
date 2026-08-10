@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentHouseholdId } from "@/lib/households";
 
 export type SaveBalancesResult = { error: string } | { error?: undefined; totalNetWorth?: number };
 
@@ -48,6 +49,7 @@ export async function saveMonthlyBalances(
   }
 
   if (templateBalances.size > 0) {
+    const householdId = await getCurrentHouseholdId(supabase, user.id);
     const { data: templates } = await supabase
       .from("account_templates")
       .select("id, name, type")
@@ -60,7 +62,7 @@ export async function saveMonthlyBalances(
       const { data: account, error } = await supabase
         .from("accounts")
         .insert({
-          user_id: user.id,
+          household_id: householdId,
           name: template.name,
           type: template.type,
           balance,

@@ -1,6 +1,6 @@
-// Hand-written to match supabase/migrations/*.sql — regenerate with
-// `supabase gen types typescript` once the project is linked, and this
-// file can be swapped for the generated one without touching call sites.
+// Generated via `mcp__plugin_supabase_supabase__generate_typescript_types`
+// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0014.
+// Regenerate the same way after any schema change rather than hand-editing.
 
 export type Json =
   | string
@@ -8,315 +8,600 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[];
+  | Json[]
 
+// Narrowed by hand (codegen only knows this column is jsonb) — matches
+// lib/constants.ts's CategoryRule shape, kept as a separate interface here
+// to avoid this types file importing from app code.
 export interface CategoryRuleEntry {
-  category: string;
-  keywords: string[];
+  category: string
+  keywords: string[]
 }
 
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.15"
+  }
   public: {
     Tables: {
-      accounts: {
-        Row: {
-          id: number;
-          user_id: string;
-          name: string;
-          type: string;
-          balance: number;
-          as_of_date: string;
-          bank_format: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: number;
-          user_id?: string;
-          name: string;
-          type: string;
-          balance?: number;
-          as_of_date: string;
-          bank_format?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: number;
-          user_id?: string;
-          name?: string;
-          type?: string;
-          balance?: number;
-          as_of_date?: string;
-          bank_format?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
-      goals: {
-        Row: {
-          id: number;
-          user_id: string;
-          name: string;
-          scope_type: string;
-          account_id: number | null;
-          target_amount: number;
-          target_date: string;
-          contribution_model: string | null;
-          contribution_params: Json;
-          created_at: string;
-        };
-        Insert: {
-          id?: number;
-          user_id?: string;
-          name: string;
-          scope_type: string;
-          account_id?: number | null;
-          target_amount: number;
-          target_date: string;
-          contribution_model?: string | null;
-          contribution_params?: Json;
-          created_at?: string;
-        };
-        Update: {
-          id?: number;
-          user_id?: string;
-          name?: string;
-          scope_type?: string;
-          account_id?: number | null;
-          target_amount?: number;
-          target_date?: string;
-          contribution_model?: string | null;
-          contribution_params?: Json;
-          created_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "goals_account_id_fkey";
-            columns: ["account_id"];
-            isOneToOne: false;
-            referencedRelation: "accounts";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      account_templates: {
-        Row: {
-          id: number;
-          user_id: string;
-          name: string;
-          type: string;
-          sort_order: number;
-          created_at: string;
-        };
-        Insert: {
-          id?: number;
-          user_id?: string;
-          name: string;
-          type: string;
-          sort_order?: number;
-          created_at?: string;
-        };
-        Update: {
-          id?: number;
-          user_id?: string;
-          name?: string;
-          type?: string;
-          sort_order?: number;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
       account_balance_history: {
         Row: {
-          id: number;
-          account_id: number;
-          user_id: string;
-          balance: number;
-          as_of_date: string;
-          created_at: string;
-        };
+          account_id: number
+          as_of_date: string
+          balance: number
+          created_at: string
+          id: number
+          user_id: string
+        }
         Insert: {
-          id?: number;
-          account_id: number;
-          user_id?: string;
-          balance: number;
-          as_of_date: string;
-          created_at?: string;
-        };
+          account_id: number
+          as_of_date: string
+          balance: number
+          created_at?: string
+          id?: never
+          user_id?: string
+        }
         Update: {
-          id?: number;
-          account_id?: number;
-          user_id?: string;
-          balance?: number;
-          as_of_date?: string;
-          created_at?: string;
-        };
+          account_id?: number
+          as_of_date?: string
+          balance?: number
+          created_at?: string
+          id?: never
+          user_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "account_balance_history_account_id_fkey";
-            columns: ["account_id"];
-            isOneToOne: false;
-            referencedRelation: "accounts";
-            referencedColumns: ["id"];
+            foreignKeyName: "account_balance_history_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
           },
-        ];
-      };
-      transactions: {
+        ]
+      }
+      account_templates: {
         Row: {
-          id: number;
-          user_id: string;
-          date: string;
-          description: string;
-          amount: number;
-          bank: string;
-          category: string;
-          created_at: string;
-        };
+          created_at: string
+          id: number
+          name: string
+          sort_order: number
+          type: string
+          user_id: string
+        }
         Insert: {
-          id?: number;
-          user_id?: string;
-          date: string;
-          description: string;
-          amount: number;
-          bank: string;
-          category?: string;
-          created_at?: string;
-        };
+          created_at?: string
+          id?: never
+          name: string
+          sort_order?: number
+          type: string
+          user_id?: string
+        }
         Update: {
-          id?: number;
-          user_id?: string;
-          date?: string;
-          description?: string;
-          amount?: number;
-          bank?: string;
-          category?: string;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      nw_snapshots: {
+          created_at?: string
+          id?: never
+          name?: string
+          sort_order?: number
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      accounts: {
         Row: {
-          id: number;
-          user_id: string;
-          date: string;
-          net_worth: number;
-          note: string | null;
-          created_at: string;
-        };
+          as_of_date: string
+          balance: number
+          bank_format: string | null
+          created_at: string
+          household_id: string
+          id: number
+          name: string
+          type: string
+          updated_at: string
+        }
         Insert: {
-          id?: number;
-          user_id?: string;
-          date: string;
-          net_worth: number;
-          note?: string | null;
-          created_at?: string;
-        };
+          as_of_date: string
+          balance?: number
+          bank_format?: string | null
+          created_at?: string
+          household_id: string
+          id?: never
+          name: string
+          type: string
+          updated_at?: string
+        }
         Update: {
-          id?: number;
-          user_id?: string;
-          date?: string;
-          net_worth?: number;
-          note?: string | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
+          as_of_date?: string
+          balance?: number
+          bank_format?: string | null
+          created_at?: string
+          household_id?: string
+          id?: never
+          name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       category_rules: {
         Row: {
-          user_id: string;
-          rules: CategoryRuleEntry[];
-          updated_at: string;
-        };
+          rules: CategoryRuleEntry[]
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          user_id?: string;
-          rules: CategoryRuleEntry[];
-          updated_at?: string;
-        };
+          rules: CategoryRuleEntry[]
+          updated_at?: string
+          user_id?: string
+        }
         Update: {
-          user_id?: string;
-          rules?: CategoryRuleEntry[];
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          rules?: CategoryRuleEntry[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       custom_bank_formats: {
         Row: {
-          id: number;
-          name: string;
-          date_column: string;
-          secondary_date_column: string | null;
-          description_column: string;
-          amount_type: string;
-          amount_column: string | null;
-          debit_column: string | null;
-          credit_column: string | null;
-          type_column: string | null;
-          category_column: string | null;
-          balance_column: string | null;
-          number_format: string | null;
-          created_by: string | null;
-          created_at: string;
-        };
+          amount_column: string | null
+          amount_type: string
+          balance_column: string | null
+          category_column: string | null
+          created_at: string
+          created_by: string | null
+          credit_column: string | null
+          date_column: string
+          debit_column: string | null
+          description_column: string
+          id: number
+          name: string
+          number_format: string | null
+          secondary_date_column: string | null
+          type_column: string | null
+        }
         Insert: {
-          id?: number;
-          name: string;
-          date_column: string;
-          secondary_date_column?: string | null;
-          description_column: string;
-          amount_type: string;
-          amount_column?: string | null;
-          debit_column?: string | null;
-          credit_column?: string | null;
-          type_column?: string | null;
-          category_column?: string | null;
-          balance_column?: string | null;
-          number_format?: string | null;
-          created_by?: string | null;
-          created_at?: string;
-        };
+          amount_column?: string | null
+          amount_type: string
+          balance_column?: string | null
+          category_column?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_column?: string | null
+          date_column: string
+          debit_column?: string | null
+          description_column: string
+          id?: never
+          name: string
+          number_format?: string | null
+          secondary_date_column?: string | null
+          type_column?: string | null
+        }
         Update: {
-          id?: number;
-          name?: string;
-          date_column?: string;
-          secondary_date_column?: string | null;
-          description_column?: string;
-          amount_type?: string;
-          amount_column?: string | null;
-          debit_column?: string | null;
-          credit_column?: string | null;
-          type_column?: string | null;
-          category_column?: string | null;
-          balance_column?: string | null;
-          number_format?: string | null;
-          created_by?: string | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
+          amount_column?: string | null
+          amount_type?: string
+          balance_column?: string | null
+          category_column?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_column?: string | null
+          date_column?: string
+          debit_column?: string | null
+          description_column?: string
+          id?: never
+          name?: string
+          number_format?: string | null
+          secondary_date_column?: string | null
+          type_column?: string | null
+        }
+        Relationships: []
+      }
+      goals: {
+        Row: {
+          account_id: number | null
+          contribution_model: string | null
+          contribution_params: Json
+          created_at: string
+          id: number
+          name: string
+          scope_type: string
+          target_amount: number
+          target_date: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: number | null
+          contribution_model?: string | null
+          contribution_params?: Json
+          created_at?: string
+          id?: never
+          name: string
+          scope_type: string
+          target_amount: number
+          target_date: string
+          user_id?: string
+        }
+        Update: {
+          account_id?: number | null
+          contribution_model?: string | null
+          contribution_params?: Json
+          created_at?: string
+          id?: never
+          name?: string
+          scope_type?: string
+          target_amount?: number
+          target_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      household_invites: {
+        Row: {
+          created_at: string
+          expires_at: string
+          household_id: string
+          id: string
+          invited_by: string
+          invited_email: string
+          status: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          household_id: string
+          id?: string
+          invited_by: string
+          invited_email: string
+          status?: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          household_id?: string
+          id?: string
+          invited_by?: string
+          invited_email?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "household_invites_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      household_links: {
+        Row: {
+          created_at: string
+          household_a_id: string
+          household_b_id: string
+          id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          household_a_id: string
+          household_b_id: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          household_a_id?: string
+          household_b_id?: string
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "household_links_household_a_id_fkey"
+            columns: ["household_a_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "household_links_household_b_id_fkey"
+            columns: ["household_b_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      household_members: {
+        Row: {
+          household_id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          household_id: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          household_id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "household_members_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      households: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      nw_snapshots: {
+        Row: {
+          created_at: string
+          date: string
+          id: number
+          net_worth: number
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: never
+          net_worth: number
+          note?: string | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: never
+          net_worth?: number
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       nw_targets: {
         Row: {
-          user_id: string;
-          quarter: string;
-          target_net_worth: number;
-        };
+          quarter: string
+          target_net_worth: number
+          user_id: string
+        }
         Insert: {
-          user_id?: string;
-          quarter: string;
-          target_net_worth: number;
-        };
+          quarter: string
+          target_net_worth: number
+          user_id?: string
+        }
         Update: {
-          user_id?: string;
-          quarter?: string;
-          target_net_worth?: number;
-        };
-        Relationships: [];
-      };
-    };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
-  };
+          quarter?: string
+          target_net_worth?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          bank: string
+          category: string
+          created_at: string
+          date: string
+          description: string
+          household_id: string
+          id: number
+        }
+        Insert: {
+          amount: number
+          bank: string
+          category?: string
+          created_at?: string
+          date: string
+          description: string
+          household_id: string
+          id?: never
+        }
+        Update: {
+          amount?: number
+          bank?: string
+          category?: string
+          created_at?: string
+          date?: string
+          description?: string
+          household_id?: string
+          id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
