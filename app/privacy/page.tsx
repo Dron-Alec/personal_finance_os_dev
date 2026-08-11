@@ -135,7 +135,10 @@ export default function PrivacyPage() {
           <h2 className="text-base font-medium text-foreground">Contact</h2>
           <p>
             Questions about this policy or your data? Reach out to{" "}
-            <span className="font-mono text-foreground">[contact email]</span>.
+            <a href="mailto:alecdron@gmail.com" className="text-foreground underline">
+              alecdron@gmail.com
+            </a>
+            .
           </p>
         </section>
       </div>

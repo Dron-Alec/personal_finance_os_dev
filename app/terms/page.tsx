@@ -116,7 +116,10 @@ export default function TermsPage() {
           <h2 className="text-base font-medium text-foreground">Contact</h2>
           <p>
             Questions about these Terms? Reach out to{" "}
-            <span className="font-mono text-foreground">[contact email]</span>.
+            <a href="mailto:alecdron@gmail.com" className="text-foreground underline">
+              alecdron@gmail.com
+            </a>
+            .
           </p>
         </section>
       </div>
