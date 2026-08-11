@@ -52,7 +52,7 @@ export async function saveMonthlyBalances(
     const householdId = await getCurrentHouseholdId(supabase, user.id);
     const { data: templates } = await supabase
       .from("account_templates")
-      .select("id, name, type")
+      .select("id, name, type, bank_format")
       .in("id", Array.from(templateBalances.keys()));
 
     for (const template of templates ?? []) {
@@ -65,6 +65,7 @@ export async function saveMonthlyBalances(
           household_id: householdId,
           name: template.name,
           type: template.type,
+          bank_format: template.bank_format,
           balance,
           as_of_date: entryDate,
         })

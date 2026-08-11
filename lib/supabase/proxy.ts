@@ -5,6 +5,7 @@ import type { Database } from "./database.types";
 const PUBLIC_PATHS = new Set(["/login", "/signup"]);
 const MFA_ENROLL_PATH = "/mfa/enroll";
 const MFA_CHALLENGE_PATH = "/mfa/challenge";
+const ONBOARDING_PATH = "/onboarding";
 // Unlike PUBLIC_PATHS (exact-match, redirects away once fully
 // authenticated), /invite/[token] must stay reachable both logged-out and
 // logged-in — the page itself branches on auth state.
@@ -82,8 +83,33 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Fully authenticated with MFA satisfied — keep them out of auth pages.
-  if (isPublicPath || pathname === MFA_ENROLL_PATH || pathname === MFA_CHALLENGE_PATH) {
+  // MFA satisfied — one-time bank/account setup step before any app data.
+  // Skippable (lib/actions/onboarding.ts's skipOnboarding still sets
+  // onboarded_at), so this only ever fires once per user.
+  const { data: settings } = await supabase
+    .from("user_settings")
+    .select("onboarded_at")
+    .maybeSingle();
+  const isOnboarded = !!settings?.onboarded_at;
+
+  if (!isOnboarded) {
+    if (pathname !== ONBOARDING_PATH) {
+      const url = request.nextUrl.clone();
+      url.pathname = ONBOARDING_PATH;
+      url.search = `?redirect=${encodeURIComponent(pathname + search)}`;
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
+
+  // Fully authenticated with MFA + onboarding satisfied — keep them out of
+  // auth pages.
+  if (
+    isPublicPath ||
+    pathname === MFA_ENROLL_PATH ||
+    pathname === MFA_CHALLENGE_PATH ||
+    pathname === ONBOARDING_PATH
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/data-entry";
     return NextResponse.redirect(url);

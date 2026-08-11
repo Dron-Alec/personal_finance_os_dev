@@ -8,19 +8,34 @@ import { Separator } from "@/components/ui/separator";
 export default async function DataEntryPage() {
   const supabase = await createClient();
 
-  const [{ data: accounts }, { data: transactions }, { data: templates }, { data: bankAccounts }, { data: customFormats }] =
-    await Promise.all([
-      supabase.from("accounts").select("id, name, balance").order("name"),
-      supabase
-        .from("transactions")
-        .select("id, date, description, amount, bank, category")
-        .order("date", { ascending: false }),
-      supabase.from("account_templates").select("id, name, type").order("sort_order"),
-      supabase.from("accounts").select("bank_format").not("bank_format", "is", null),
-      supabase.from("custom_bank_formats").select("name").order("name"),
-    ]);
+  const [
+    { data: accounts },
+    { data: transactions },
+    { data: templates },
+    { data: bankAccounts },
+    { data: bankTemplates },
+    { data: customFormats },
+  ] = await Promise.all([
+    supabase.from("accounts").select("id, name, balance").order("name"),
+    supabase
+      .from("transactions")
+      .select("id, date, description, amount, bank, category")
+      .order("date", { ascending: false }),
+    supabase.from("account_templates").select("id, name, type").order("sort_order"),
+    supabase.from("accounts").select("bank_format").not("bank_format", "is", null),
+    supabase.from("account_templates").select("bank_format").not("bank_format", "is", null),
+    supabase.from("custom_bank_formats").select("name").order("name"),
+  ]);
 
-  const bankShortlist = Array.from(new Set((bankAccounts ?? []).map((a) => a.bank_format as string)));
+  // Templates carry a bank hint too (set during onboarding, before any real
+  // account exists) — merge both sources so Statement Format narrows right
+  // away instead of waiting for a first real account.
+  const bankShortlist = Array.from(
+    new Set([
+      ...(bankAccounts ?? []).map((a) => a.bank_format as string),
+      ...(bankTemplates ?? []).map((t) => t.bank_format as string),
+    ]),
+  );
   const customFormatNames = (customFormats ?? []).map((f) => f.name);
 
   return (

@@ -8,20 +8,20 @@ import { TOUR_STEPS } from "@/lib/tour-steps";
 import { useHasMounted } from "@/lib/use-has-mounted";
 import { Button } from "@/components/ui/button";
 
-const SEEN_KEY = "pfos-tour-seen";
-
 function subscribeNoop() {
   return () => {};
 }
 
-// Whether this browser has dismissed the tour before — read straight from
-// localStorage via useSyncExternalStore so the client/server first-paint
-// values differ safely (server always "seen", so the tour never
-// auto-renders during SSR) without an effect+setState pair.
-function useHasSeenTour(): boolean {
+// Whether this browser has dismissed the tour before, for this account —
+// keyed by user id (not a flat constant) so a brand-new signup in a browser
+// that already dismissed the tour for a different account still sees it.
+// Read straight from localStorage via useSyncExternalStore so the
+// client/server first-paint values differ safely (server always "seen", so
+// the tour never auto-renders during SSR) without an effect+setState pair.
+function useHasSeenTour(seenKey: string): boolean {
   return useSyncExternalStore(
     subscribeNoop,
-    () => window.localStorage.getItem(SEEN_KEY) === "1",
+    () => window.localStorage.getItem(seenKey) === "1",
     () => true,
   );
 }
@@ -66,8 +66,9 @@ function useTargetRect(target: string | undefined): Rect | null {
   );
 }
 
-export function ProductTour() {
-  const hasSeen = useHasSeenTour();
+export function ProductTour({ userId }: { userId: string }) {
+  const seenKey = `pfos-tour-seen:${userId}`;
+  const hasSeen = useHasSeenTour(seenKey);
   const [manuallyActive, setManuallyActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const active = manuallyActive || !hasSeen;
@@ -137,7 +138,7 @@ export function ProductTour() {
   }, [step]);
 
   function dismiss() {
-    window.localStorage.setItem(SEEN_KEY, "1");
+    window.localStorage.setItem(seenKey, "1");
     setManuallyActive(false);
     setStepIndex(0);
   }

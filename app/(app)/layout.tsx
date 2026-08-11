@@ -37,6 +37,10 @@ async function hasActiveHouseholdLink(): Promise<boolean> {
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const showCombined = await hasActiveHouseholdLink();
   const navItems = showCombined ? [...NAV_ITEMS, COMBINED_NAV_ITEM] : NAV_ITEMS;
 
@@ -47,7 +51,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div />
           <h1 className="justify-self-center text-xl font-semibold">Candid 💰</h1>
           <div className="flex items-center justify-self-end gap-2">
-            <ProductTour />
+            {user && <ProductTour userId={user.id} />}
             <ThemeToggle />
             <form action={signOut}>
               <Button type="submit" variant="outline" size="sm">
