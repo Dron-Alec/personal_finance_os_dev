@@ -29,6 +29,13 @@ export const TOUR_STEPS: TourStep[] = [
     body: "A checklist of suggested account names/types you haven't created yet — leave one at $0 to skip it. Remove a suggestion with the ✕ (asks to confirm) without touching any real account, or add your own with a name and a searchable type dropdown.",
   },
   {
+    id: "get-a-csv",
+    path: "/data-entry",
+    target: "csv-upload",
+    title: "Getting a CSV From Your Bank",
+    body: "Every bank labels this a little differently, but the pattern holds almost everywhere: log into your bank or card issuer's website — not the mobile app, export is usually desktop-only — and look for \"Statements,\" \"Documents,\" or \"Activity.\" Pick a date range, then look for a \"Download\" or \"Export\" option. Choose CSV specifically if there's a choice — not PDF or QFX. Save the file, then come back here to upload it.",
+  },
+  {
     id: "csv-upload",
     path: "/data-entry",
     target: "csv-upload",
@@ -111,6 +118,13 @@ export const TOUR_STEPS: TourStep[] = [
     target: "category-rules",
     title: 'Category Rules (the "buckets")',
     body: "Each category has an ordered list of comma-separated keywords — the first keyword that matches a transaction's description (case-insensitive) wins. Saving re-categorizes every existing transaction against the updated rules.",
+  },
+  {
+    id: "household",
+    path: "/settings",
+    target: "household",
+    title: "Invite a Household Member",
+    body: "Enter their email and send an invite — there's no email service wired up yet, so you'll get a link back to copy and send yourself. Once they sign up (or sign in) and accept, a Combined tab appears for both of you with shared category-level spending and net worth. Your individual transactions are never shared, even once linked, and either of you can revoke the link anytime from here.",
   },
   {
     id: "danger-zone",
