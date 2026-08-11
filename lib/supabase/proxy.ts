@@ -2,14 +2,25 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./database.types";
 
-const PUBLIC_PATHS = new Set(["/login", "/signup"]);
+const PUBLIC_PATHS = new Set(["/login", "/signup", "/forgot-password"]);
 const MFA_ENROLL_PATH = "/mfa/enroll";
 const MFA_CHALLENGE_PATH = "/mfa/challenge";
 const ONBOARDING_PATH = "/onboarding";
 // Unlike PUBLIC_PATHS (exact-match, redirects away once fully
-// authenticated), /invite/[token] must stay reachable both logged-out and
-// logged-in — the page itself branches on auth state.
+// authenticated), these two must stay reachable both logged-out and
+// logged-in: /invite/[token] branches on auth state itself, and
+// /reset-password is reached via a Supabase recovery-link session that
+// establishes itself client-side (detectSessionInUrl), so the very first
+// server request may still see no user. Once authenticated, both still flow
+// through the normal MFA/onboarding gates below like any other route —
+// /reset-password deliberately does NOT bypass MFA (email-link possession
+// alone shouldn't be enough to change a password on an MFA-protected
+// account) and reuses the existing redirect-param bounce-and-return.
 const INVITE_PATH_PREFIX = "/invite/";
+const NO_USER_EXEMPT_PATHS = new Set(["/reset-password"]);
+// Static content that should never be gated by auth/MFA/onboarding at all,
+// in either direction.
+const STATIC_CONTENT_PATHS = new Set(["/privacy", "/terms"]);
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -47,9 +58,14 @@ export async function updateSession(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const isPublicPath = PUBLIC_PATHS.has(pathname);
   const isInvitePath = pathname.startsWith(INVITE_PATH_PREFIX);
+  const isStaticContentPath = STATIC_CONTENT_PATHS.has(pathname);
+
+  if (isStaticContentPath) {
+    return supabaseResponse;
+  }
 
   if (!user) {
-    if (!isPublicPath && !isInvitePath) {
+    if (!isPublicPath && !isInvitePath && !NO_USER_EXEMPT_PATHS.has(pathname)) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       return NextResponse.redirect(url);

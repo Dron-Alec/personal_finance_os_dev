@@ -1,6 +1,10 @@
 // Generated via `mcp__plugin_supabase_supabase__generate_typescript_types`
-// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0018.
+// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0019.
 // Regenerate the same way after any schema change rather than hand-editing.
+//
+// NOTE: regeneration always resets category_rules.rules to a generic Json
+// type — re-apply the CategoryRuleEntry narrowing below (and its 3 usages
+// in the category_rules table block) every time this file is regenerated.
 
 export type Json =
   | string
@@ -575,6 +579,7 @@ export type Database = {
         Args: { invite_token: string }
         Returns: boolean
       }
+      delete_own_account: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

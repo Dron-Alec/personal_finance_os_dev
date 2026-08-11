@@ -134,6 +134,17 @@ function SignupForm() {
                 <Button type="submit" disabled={isSubmitting} className="mt-2">
                   {isSubmitting ? "Creating account…" : "Create account"}
                 </Button>
+                <p className="text-center text-xs text-muted-foreground">
+                  By creating an account, you agree to our{" "}
+                  <Link href="/terms" className="underline">
+                    Terms
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" className="underline">
+                    Privacy Policy
+                  </Link>
+                  .
+                </p>
               </form>
               <p className="mt-4 text-center text-sm text-muted-foreground">
                 Already have an account?{" "}

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentHouseholdId } from "@/lib/households";
 import { categorizeTransaction } from "@/lib/categorize";
@@ -85,4 +86,26 @@ export async function resetAllData() {
   revalidatePath("/spending");
   revalidatePath("/accounts");
   revalidatePath("/net-worth");
+}
+
+export async function deleteOwnAccount() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated.");
+
+  // delete_own_account (0019) is SECURITY DEFINER: it deletes this
+  // household's transactions/accounts/household row, then the auth.users
+  // row itself, which cascades everything else (category_rules,
+  // nw_snapshots, account_templates, goals, user_settings, and Supabase's
+  // own session/identity/MFA tables). Irreversible.
+  const { error } = await supabase.rpc("delete_own_account");
+  if (error) throw new Error(error.message);
+
+  // The auth.users row is gone, so this session is already invalid — sign
+  // out explicitly anyway to clear cookies cleanly rather than leaving
+  // stale ones that would just error on the next request.
+  await supabase.auth.signOut();
+  redirect("/login");
 }

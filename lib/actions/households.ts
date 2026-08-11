@@ -1,6 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -32,7 +33,15 @@ export async function inviteToHousehold(_prevState: InviteResult, formData: Form
   });
   if (error) return { error: error.message };
 
-  const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/invite/${token}`;
+  // NEXT_PUBLIC_APP_URL isn't set in this project — build an absolute URL
+  // from request headers instead, so the link is still valid when copied
+  // out of this browser tab (pasted into an email, a fresh tab, etc.),
+  // unlike a bare relative path.
+  const headersList = await headers();
+  const host = headersList.get("host");
+  const protocol = headersList.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
+  const origin = host ? `${protocol}://${host}` : "";
+  const inviteUrl = `${origin}/invite/${token}`;
 
   // TODO: no email service is wired up in this app yet (zero email-provider
   // deps in package.json). Wire up an actual send here once one is chosen —

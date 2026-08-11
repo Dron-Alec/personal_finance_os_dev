@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { InfoIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentHouseholdId } from "@/lib/households";
@@ -6,6 +7,7 @@ import { clearTransactions, resetAllData } from "@/lib/actions/settings";
 import { CategoryRulesForm } from "@/components/settings/category-rules-form";
 import { HouseholdSection } from "@/components/settings/household-section";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
+import { DeleteAccountButton } from "@/components/settings/delete-account-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function SettingsPage() {
@@ -85,6 +87,7 @@ export default async function SettingsPage() {
             confirmLabel="Reset everything"
             onConfirm={resetAllData}
           />
+          <DeleteAccountButton />
         </CardContent>
       </Card>
 
@@ -115,6 +118,14 @@ export default async function SettingsPage() {
             goals you can actually track against reality, and a way to plan ahead without
             guessing. But the looking part is yours. That&apos;s not a limitation. That&apos;s
             the feature.
+          </p>
+          <p className="flex gap-3 text-xs">
+            <Link href="/privacy" className="underline">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="underline">
+              Terms of Service
+            </Link>
           </p>
         </CardContent>
       </Card>
