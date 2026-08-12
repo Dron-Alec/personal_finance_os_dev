@@ -42,7 +42,7 @@ export async function addAccountTemplate(
   });
   if (error) {
     return {
-      error: error.code === "23505" ? "You already have a suggestion with that name." : error.message,
+      error: error.code === "23505" ? "You already have an account with that name." : error.message,
     };
   }
 
