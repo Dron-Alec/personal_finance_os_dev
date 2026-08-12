@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { addAccountTemplate, removeAccountTemplate } from "@/lib/actions/account-templates";
 import { AccountTypeSelect } from "@/components/accounts/account-type-select";
 import { saveMonthlyBalances } from "@/lib/actions/data-entry";
-import { ACCOUNT_TYPES } from "@/lib/constants";
+import { ACCOUNT_TYPES, signedBalance } from "@/lib/constants";
 import { lastDayOfPreviousMonth, toDateInputValue } from "@/lib/date-utils";
 import { formatCurrency } from "@/lib/format";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
@@ -14,8 +14,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export type ExistingAccount = { id: number; name: string; balance: number };
+export type ExistingAccount = { id: number; name: string; balance: number; type: string; is_liability: boolean };
 export type AccountTemplate = { id: number; name: string; type: string };
+
+// Stored balances are already signed (negative for Credit Card / liability
+// accounts, see signedBalance) — inputs always show/accept the positive
+// amount, matching how everyone actually thinks about what they owe.
+function isNegativeType(type: string, isLiability: boolean): boolean {
+  return type === "Credit Card" || isLiability;
+}
 
 export function BalanceEntryForm({
   accounts,
@@ -32,8 +39,12 @@ export function BalanceEntryForm({
     [accounts, templates],
   );
 
+  // Keyed by account id, holds the positive "as displayed/typed" amount —
+  // negated at total-calculation time below, not here.
   const [existingValues, setExistingValues] = useState<Record<number, number>>(() =>
-    Object.fromEntries(accounts.map((a) => [a.id, a.balance])),
+    Object.fromEntries(
+      accounts.map((a) => [a.id, isNegativeType(a.type, a.is_liability) ? Math.abs(a.balance) : a.balance]),
+    ),
   );
   const [templateValues, setTemplateValues] = useState<Record<number, number>>({});
 
@@ -49,8 +60,8 @@ export function BalanceEntryForm({
   }, [pending, state]);
 
   const total =
-    Object.values(existingValues).reduce((s, v) => s + (v || 0), 0) +
-    Object.values(templateValues).reduce((s, v) => s + (v || 0), 0);
+    accounts.reduce((s, a) => s + signedBalance(a.type, existingValues[a.id] || 0, a.is_liability), 0) +
+    missingTemplates.reduce((s, t) => s + signedBalance(t.type, templateValues[t.id] || 0), 0);
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
@@ -69,21 +80,27 @@ export function BalanceEntryForm({
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium">Your accounts</p>
           <div className="grid gap-3 sm:grid-cols-2">
-            {accounts.map((a) => (
-              <div key={a.id} className="flex flex-col gap-1.5">
-                <Label htmlFor={`existing_${a.id}`}>{a.name}</Label>
-                <Input
-                  id={`existing_${a.id}`}
-                  name={`existing_${a.id}`}
-                  type="number"
-                  step="0.01"
-                  defaultValue={a.balance}
-                  onChange={(e) =>
-                    setExistingValues((prev) => ({ ...prev, [a.id]: Number(e.target.value) || 0 }))
-                  }
-                />
-              </div>
-            ))}
+            {accounts.map((a) => {
+              const negative = isNegativeType(a.type, a.is_liability);
+              return (
+                <div key={a.id} className="flex flex-col gap-1.5">
+                  <Label htmlFor={`existing_${a.id}`}>
+                    {a.name}
+                    {negative && <span className="text-xs text-muted-foreground"> (amount owed)</span>}
+                  </Label>
+                  <Input
+                    id={`existing_${a.id}`}
+                    name={`existing_${a.id}`}
+                    type="number"
+                    step="0.01"
+                    defaultValue={negative ? Math.abs(a.balance) : a.balance}
+                    onChange={(e) =>
+                      setExistingValues((prev) => ({ ...prev, [a.id]: Number(e.target.value) || 0 }))
+                    }
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -105,7 +122,11 @@ export function BalanceEntryForm({
               <div key={t.id} className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <Label htmlFor={`template_${t.id}`}>
-                    {t.name} <span className="text-xs text-muted-foreground">({t.type})</span>
+                    {t.name}{" "}
+                    <span className="text-xs text-muted-foreground">
+                      ({t.type}
+                      {t.type === "Credit Card" ? ", amount owed" : ""})
+                    </span>
                   </Label>
                   <ConfirmActionButton
                     label={<XIcon className="size-3.5" />}

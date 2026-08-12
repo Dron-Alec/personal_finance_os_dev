@@ -14,7 +14,7 @@ export default async function AccountsPage() {
   const supabase = await createClient();
 
   const [{ data: accounts }, { data: history }, { data: goals }] = await Promise.all([
-    supabase.from("accounts").select("id, name, type, balance, as_of_date, bank_format").order("id"),
+    supabase.from("accounts").select("id, name, type, balance, as_of_date, bank_format, is_liability").order("id"),
     supabase.from("account_balance_history").select("account_id, balance, as_of_date"),
     supabase
       .from("goals")
@@ -52,11 +52,17 @@ export default async function AccountsPage() {
     }
   });
 
-  const pieData = accountList.map((a) => ({
-    name: a.name,
-    value: Number(a.balance),
-    color: getAccountColor(a.id, sortedIds),
-  }));
+  // A pie chart can't represent a negative slice — liabilities (negative
+  // balance) are excluded here, not just hidden visually. They still count
+  // in Total Account Value and the By Account Type bars above/below, which
+  // handle negative values fine.
+  const pieData = accountList
+    .filter((a) => Number(a.balance) > 0)
+    .map((a) => ({
+      name: a.name,
+      value: Number(a.balance),
+      color: getAccountColor(a.id, sortedIds),
+    }));
 
   const typeTotals = new Map<string, number>();
   for (const a of accountList) {

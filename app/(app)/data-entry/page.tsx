@@ -16,7 +16,7 @@ export default async function DataEntryPage() {
     { data: bankTemplates },
     { data: customFormats },
   ] = await Promise.all([
-    supabase.from("accounts").select("id, name, balance").order("name"),
+    supabase.from("accounts").select("id, name, balance, type, is_liability").order("name"),
     supabase
       .from("transactions")
       .select("id, date, description, amount, bank, category")

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentHouseholdId } from "@/lib/households";
+import { signedBalance } from "@/lib/constants";
 
 export type SaveBalancesResult = { error: string } | { error?: undefined; totalNetWorth?: number };
 
@@ -19,11 +20,29 @@ export async function saveMonthlyBalances(
   const entryDate = formData.get("entryDate");
   if (typeof entryDate !== "string" || !entryDate) return { error: "Date is required." };
 
+  const existingEntries: { accountId: number; amount: number }[] = [];
   for (const [key, value] of formData.entries()) {
     if (!key.startsWith("existing_")) continue;
     const accountId = Number(key.slice("existing_".length));
-    const balance = Number(value);
-    if (!Number.isFinite(accountId) || !Number.isFinite(balance)) continue;
+    const amount = Number(value);
+    if (!Number.isFinite(accountId) || !Number.isFinite(amount)) continue;
+    existingEntries.push({ accountId, amount });
+  }
+
+  // Re-derive type/is_liability server-side rather than trusting a hidden
+  // client field — same reasoning as signedBalance's other call sites.
+  const { data: existingAccounts } = await supabase
+    .from("accounts")
+    .select("id, type, is_liability")
+    .in(
+      "id",
+      existingEntries.map((e) => e.accountId),
+    );
+  const accountMeta = new Map((existingAccounts ?? []).map((a) => [a.id, a]));
+
+  for (const { accountId, amount } of existingEntries) {
+    const meta = accountMeta.get(accountId);
+    const balance = meta ? signedBalance(meta.type, amount, meta.is_liability) : amount;
 
     const { error } = await supabase
       .from("accounts")
@@ -56,8 +75,12 @@ export async function saveMonthlyBalances(
       .in("id", Array.from(templateBalances.keys()));
 
     for (const template of templates ?? []) {
-      const balance = templateBalances.get(template.id);
-      if (balance === undefined) continue;
+      const amount = templateBalances.get(template.id);
+      if (amount === undefined) continue;
+      // No is_liability concept for templates (just suggestions) — an
+      // "Other" suggestion always defaults to an asset, same as before.
+      // Credit Card still auto-negates.
+      const balance = signedBalance(template.type, amount);
 
       const { data: account, error } = await supabase
         .from("accounts")

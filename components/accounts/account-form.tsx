@@ -8,6 +8,7 @@ import { toDateInputValue } from "@/lib/date-utils";
 import { AccountTypeSelect } from "@/components/accounts/account-type-select";
 import { AccountBankSelect } from "@/components/accounts/account-bank-select";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -26,6 +27,7 @@ export type AccountOption = {
   type: string;
   balance: number;
   bank_format: string | null;
+  is_liability: boolean;
 };
 
 // Remounts (via `key`) when the selected account changes, so its bank
@@ -56,6 +58,15 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
 
   const isNew = selected === ADD_NEW;
   const existing = !isNew ? accounts.find((a) => String(a.id) === selected) : undefined;
+  const effectiveType = isNew ? type : (existing?.type ?? "");
+  const isCreditCard = effectiveType === "Credit Card";
+  const isOther = effectiveType === "Other";
+  // Credit card balances — and any "Other" account flagged as a liability —
+  // are stored negative (see signedBalance) so they subtract from net
+  // worth. Always show/accept the positive amount owed here, matching how
+  // everyone actually thinks about a balance they owe.
+  const storedAsNegative = isCreditCard || (existing?.is_liability ?? false);
+  const displayBalance = existing ? (storedAsNegative ? Math.abs(existing.balance) : existing.balance) : 0;
 
   // Base UI's Select only renders the selected item's *label* in the
   // trigger (instead of the raw value) when given an explicit items map.
@@ -67,7 +78,12 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
   return (
     <form ref={formRef} action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="mode" value={isNew ? "create" : "update"} />
-      {!isNew && existing && <input type="hidden" name="accountId" value={existing.id} />}
+      {!isNew && existing && (
+        <>
+          <input type="hidden" name="accountId" value={existing.id} />
+          <input type="hidden" name="type" value={existing.type} />
+        </>
+      )}
 
       <div className="flex flex-col gap-1.5 sm:max-w-xs">
         <Label>Account</Label>
@@ -109,15 +125,18 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
           )
         )}
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="acct-balance">Balance ($)</Label>
+          <Label htmlFor="acct-balance">{isCreditCard ? "Amount Owed ($)" : "Balance ($)"}</Label>
           <Input
             id="acct-balance"
             name="balance"
             type="number"
             step="0.01"
-            defaultValue={existing?.balance ?? 0}
+            defaultValue={displayBalance}
             key={selected}
           />
+          {isCreditCard && (
+            <p className="text-xs text-muted-foreground">Counts against net worth, not toward it.</p>
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="acct-date">As of Date</Label>
@@ -127,6 +146,19 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
           <Label htmlFor="acct-bank">Bank (optional)</Label>
           <BankField key={selected} defaultValue={existing?.bank_format ?? ""} />
         </div>
+        {isOther && (
+          <div className="flex flex-col justify-end gap-1.5 pb-1.5">
+            <Label htmlFor="acct-is-liability" className="font-normal">
+              <Checkbox
+                id="acct-is-liability"
+                name="isLiability"
+                defaultChecked={existing?.is_liability ?? false}
+                key={selected}
+              />
+              This is a liability (subtracts from net worth)
+            </Label>
+          </div>
+        )}
       </div>
       <p className="text-xs text-muted-foreground">
         Setting a bank narrows the Statement Format choices when you upload CSVs later — opening

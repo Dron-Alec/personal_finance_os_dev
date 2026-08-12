@@ -162,8 +162,9 @@ export function ProductTour({ userId }: { userId: string }) {
 
   return (
     <>
-      <Button type="button" variant="ghost" size="icon-sm" aria-label="Guided tour" onClick={start}>
+      <Button type="button" variant="ghost" size="sm" aria-label="Guided tour" onClick={start}>
         <HelpCircleIcon className="size-4" />
+        Help
       </Button>
       {active && step && <TourOverlay step={step} rect={rect} index={stepIndex} onNext={next} onBack={back} onSkip={dismiss} />}
     </>

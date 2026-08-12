@@ -3,8 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { ACCOUNT_TYPES } from "@/lib/constants";
+import { ACCOUNT_TYPES, signedBalance } from "@/lib/constants";
 import { getCurrentHouseholdId } from "@/lib/households";
+
+// Unchecked checkboxes simply aren't submitted in FormData, so this field
+// is either "on" or absent — never "off"/"false".
+const isLiabilitySchema = z.literal("on").optional();
 
 const createSchema = z.object({
   mode: z.literal("create"),
@@ -13,14 +17,17 @@ const createSchema = z.object({
   balance: z.coerce.number(),
   asOfDate: z.string().min(1, "Date is required."),
   bankFormat: z.string().trim().optional(),
+  isLiability: isLiabilitySchema,
 });
 
 const updateSchema = z.object({
   mode: z.literal("update"),
   accountId: z.coerce.number(),
+  type: z.enum(ACCOUNT_TYPES),
   balance: z.coerce.number(),
   asOfDate: z.string().min(1, "Date is required."),
   bankFormat: z.string().trim().optional(),
+  isLiability: isLiabilitySchema,
 });
 
 export type SaveAccountResult = { error: string } | { error?: undefined };
@@ -58,7 +65,9 @@ export async function saveAccount(
     if (!parsed.success) {
       return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
     }
-    const { name, type, balance, asOfDate, bankFormat } = parsed.data;
+    const { name, type, asOfDate, bankFormat } = parsed.data;
+    const isLiability = parsed.data.isLiability === "on";
+    const balance = signedBalance(type, parsed.data.balance, isLiability);
     const householdId = await getCurrentHouseholdId(supabase, user.id);
 
     const { data: account, error: insertError } = await supabase
@@ -70,6 +79,7 @@ export async function saveAccount(
         balance,
         as_of_date: asOfDate,
         bank_format: bankFormat || null,
+        is_liability: isLiability,
       })
       .select("id")
       .single();
@@ -87,7 +97,9 @@ export async function saveAccount(
     if (!parsed.success) {
       return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
     }
-    const { accountId, balance, asOfDate, bankFormat } = parsed.data;
+    const { accountId, type, asOfDate, bankFormat } = parsed.data;
+    const isLiability = parsed.data.isLiability === "on";
+    const balance = signedBalance(type, parsed.data.balance, isLiability);
 
     const { data: account, error: updateError } = await supabase
       .from("accounts")
@@ -95,6 +107,7 @@ export async function saveAccount(
         balance,
         as_of_date: asOfDate,
         bank_format: bankFormat || null,
+        is_liability: isLiability,
         updated_at: new Date().toISOString(),
       })
       .eq("id", accountId)

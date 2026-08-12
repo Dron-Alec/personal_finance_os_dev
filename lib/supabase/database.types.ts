@@ -1,5 +1,5 @@
 // Generated via `mcp__plugin_supabase_supabase__generate_typescript_types`
-// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0019.
+// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0020.
 // Regenerate the same way after any schema change rather than hand-editing.
 //
 // NOTE: regeneration always resets category_rules.rules to a generic Json
@@ -110,6 +110,7 @@ export type Database = {
           created_at: string
           household_id: string
           id: number
+          is_liability: boolean
           name: string
           type: string
           updated_at: string
@@ -121,6 +122,7 @@ export type Database = {
           created_at?: string
           household_id: string
           id?: never
+          is_liability?: boolean
           name: string
           type: string
           updated_at?: string
@@ -132,6 +134,7 @@ export type Database = {
           created_at?: string
           household_id?: string
           id?: never
+          is_liability?: boolean
           name?: string
           type?: string
           updated_at?: string

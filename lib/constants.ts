@@ -13,6 +13,20 @@ export const ACCOUNT_TYPES = [
 
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
 
+// Credit Card is the one ACCOUNT_TYPES value that's unambiguously a
+// liability. "Other" is the one ambiguous enough to need an explicit
+// per-account choice (isLiability, accounts.is_liability) — everything else
+// is unambiguously an asset. The user always enters a positive number
+// (nobody thinks of their card balance as "-500"); this is the single place
+// that flips it negative before it's stored, so every place that sums
+// account balances (net worth snapshots, Total Account Value, per-type
+// totals) subtracts liabilities automatically instead of adding them.
+// Math.abs guards against a double-negative if someone types a negative
+// number themselves.
+export function signedBalance(type: string, amount: number, isLiability = false): number {
+  return type === "Credit Card" || isLiability ? -Math.abs(amount) : amount;
+}
+
 // Alphabetized — order doesn't affect parsing, and the dropdown is
 // searchable, but a stable sort makes the unfiltered list easier to scan.
 // Only formats with independently sourced/tested header data belong here
