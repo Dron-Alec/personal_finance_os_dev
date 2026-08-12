@@ -25,8 +25,8 @@ export const TOUR_STEPS: TourStep[] = [
     id: "suggested-accounts",
     path: "/data-entry",
     target: "suggested-accounts",
-    title: "Add an Account",
-    body: "Expand this to see a checklist of account names/types you haven't created yet — enter a balance to create one, or leave it at $0 to skip. Remove a checklist item with the ✕ (asks to confirm) without touching any real account, or add your own with a name and a searchable type dropdown. Accounts typed \"Other\" get a checkbox here to mark them as debt.",
+    title: "Your Accounts Checklist",
+    body: "Alongside accounts you've already created, this list starts with common account types you haven't set up yet — give one a balance to create it (or leave it at $0 to skip), or remove it with the ✕ (asks to confirm, doesn't touch any real account). Use \"Add an account\" below to add your own; it'll join this list once added. Accounts typed \"Other\" get a checkbox here to mark them as debt.",
   },
   {
     id: "get-a-csv",

@@ -82,14 +82,14 @@ export function BalanceEntryForm({
         />
       </div>
 
-      {accounts.length > 0 && (
-        <div className="flex flex-col gap-2">
+      {(accounts.length > 0 || missingTemplates.length > 0) && (
+        <div className="flex flex-col gap-2" data-tour="suggested-accounts">
           <p className="text-sm font-medium">Your accounts</p>
           <div className="grid gap-3 sm:grid-cols-2">
             {accounts.map((a) => {
               const negative = isNegativeType(a.type, a.is_liability);
               return (
-                <div key={a.id} className="flex flex-col gap-1.5">
+                <div key={`acct-${a.id}`} className="flex flex-col gap-1.5">
                   <Label htmlFor={`existing_${a.id}`}>
                     {a.name}
                     {negative && <span className="text-xs text-muted-foreground"> (debt)</span>}
@@ -107,83 +107,70 @@ export function BalanceEntryForm({
                 </div>
               );
             })}
+            {missingTemplates.map((t) => {
+              const isOther = t.type === "Other";
+              return (
+                <div key={`tmpl-${t.id}`} className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor={`template_${t.id}`}>
+                      {t.name}{" "}
+                      <span className="text-xs text-muted-foreground">
+                        ({t.type}
+                        {t.type === "Credit Card" ? ", debt" : ""}, not yet created)
+                      </span>
+                    </Label>
+                    <ConfirmActionButton
+                      label={<XIcon className="size-3.5" />}
+                      title={`Remove "${t.name}"?`}
+                      description="This removes it from your account checklist — it won't affect any accounts you've already created."
+                      confirmLabel="Remove"
+                      onConfirm={() => removeAccountTemplate(t.id)}
+                      variant="ghost"
+                      size="icon-xs"
+                    />
+                  </div>
+                  <Input
+                    id={`template_${t.id}`}
+                    name={`template_${t.id}`}
+                    type="number"
+                    step="0.01"
+                    defaultValue={0}
+                    onChange={(e) =>
+                      setTemplateValues((prev) => ({ ...prev, [t.id]: Number(e.target.value) || 0 }))
+                    }
+                  />
+                  {isOther && (
+                    <Label htmlFor={`template_${t.id}_liability`} className="font-normal">
+                      <Checkbox
+                        id={`template_${t.id}_liability`}
+                        name={`template_${t.id}_liability`}
+                        onCheckedChange={(checked) =>
+                          setTemplateLiability((prev) => ({ ...prev, [t.id]: checked }))
+                        }
+                      />
+                      This is a debt (subtracts from net worth)
+                    </Label>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {accounts.length === 0 && (
+      {accounts.length === 0 && missingTemplates.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          No accounts set up yet — add them in the Accounts tab first, or use &quot;Add an
-          account&quot; below.
+          No accounts set up yet — use &quot;Add an account&quot; below.
         </p>
       )}
 
-      <Collapsible defaultOpen={missingTemplates.length > 0} data-tour="suggested-accounts">
+      <Collapsible defaultOpen={accounts.length === 0 && missingTemplates.length === 0}>
         <CollapsibleTrigger>
           <ChevronDownIcon className="size-4 transition-transform group-data-panel-open:rotate-180" />
           Add an account
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-3">
-          <div className="flex flex-col gap-4">
-            {missingTemplates.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <p className="text-xs text-muted-foreground">
-                  Accounts on your checklist you haven&apos;t created yet — enter a balance to
-                  create one, or leave at 0 to skip.
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {missingTemplates.map((t) => {
-                    const isOther = t.type === "Other";
-                    return (
-                      <div key={t.id} className="flex flex-col gap-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <Label htmlFor={`template_${t.id}`}>
-                            {t.name}{" "}
-                            <span className="text-xs text-muted-foreground">
-                              ({t.type}
-                              {t.type === "Credit Card" ? ", debt" : ""})
-                            </span>
-                          </Label>
-                          <ConfirmActionButton
-                            label={<XIcon className="size-3.5" />}
-                            title={`Remove "${t.name}"?`}
-                            description="This removes it from your account checklist — it won't affect any accounts you've already created."
-                            confirmLabel="Remove"
-                            onConfirm={() => removeAccountTemplate(t.id)}
-                            variant="ghost"
-                            size="icon-xs"
-                          />
-                        </div>
-                        <Input
-                          id={`template_${t.id}`}
-                          name={`template_${t.id}`}
-                          type="number"
-                          step="0.01"
-                          defaultValue={0}
-                          onChange={(e) =>
-                            setTemplateValues((prev) => ({ ...prev, [t.id]: Number(e.target.value) || 0 }))
-                          }
-                        />
-                        {isOther && (
-                          <Label htmlFor={`template_${t.id}_liability`} className="font-normal">
-                            <Checkbox
-                              id={`template_${t.id}_liability`}
-                              name={`template_${t.id}_liability`}
-                              onCheckedChange={(checked) =>
-                                setTemplateLiability((prev) => ({ ...prev, [t.id]: checked }))
-                              }
-                            />
-                            This is a debt (subtracts from net worth)
-                          </Label>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            <AddTemplateForm />
-          </div>
+          <AddTemplateForm />
         </CollapsibleContent>
       </Collapsible>
 
@@ -220,7 +207,7 @@ function AddTemplateForm() {
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Added to your checklist.");
+        toast.success("Added — enter a balance above to create it.");
         setName("");
         setType(ACCOUNT_TYPES[0]);
       }
