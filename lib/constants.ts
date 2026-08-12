@@ -2,6 +2,7 @@ export const ACCOUNT_TYPES = [
   "Checking",
   "Savings",
   "Credit Card",
+  "Loan",
   "Brokerage / Stocks",
   "401k",
   "Roth IRA",
@@ -13,8 +14,8 @@ export const ACCOUNT_TYPES = [
 
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
 
-// Credit Card is the one ACCOUNT_TYPES value that's unambiguously a
-// liability. "Other" is the one ambiguous enough to need an explicit
+// Credit Card and Loan are the ACCOUNT_TYPES values that are unambiguously
+// a liability. "Other" is the one ambiguous enough to need an explicit
 // per-account choice (isLiability, accounts.is_liability) — everything else
 // is unambiguously an asset. The user always enters a positive number
 // (nobody thinks of their card balance as "-500"); this is the single place
@@ -23,8 +24,10 @@ export type AccountType = (typeof ACCOUNT_TYPES)[number];
 // totals) subtracts liabilities automatically instead of adding them.
 // Math.abs guards against a double-negative if someone types a negative
 // number themselves.
+export const LIABILITY_TYPES = new Set(["Credit Card", "Loan"]);
+
 export function signedBalance(type: string, amount: number, isLiability = false): number {
-  return type === "Credit Card" || isLiability ? -Math.abs(amount) : amount;
+  return LIABILITY_TYPES.has(type) || isLiability ? -Math.abs(amount) : amount;
 }
 
 // Alphabetized — order doesn't affect parsing, and the dropdown is

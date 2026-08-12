@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { saveAccount } from "@/lib/actions/accounts";
-import { ACCOUNT_TYPES } from "@/lib/constants";
+import { ACCOUNT_TYPES, LIABILITY_TYPES } from "@/lib/constants";
 import { toDateInputValue } from "@/lib/date-utils";
 import { AccountTypeSelect } from "@/components/accounts/account-type-select";
 import { AccountBankSelect } from "@/components/accounts/account-bank-select";
@@ -59,13 +59,13 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
   const isNew = selected === ADD_NEW;
   const existing = !isNew ? accounts.find((a) => String(a.id) === selected) : undefined;
   const effectiveType = isNew ? type : (existing?.type ?? "");
-  const isCreditCard = effectiveType === "Credit Card";
+  const isUnambiguousDebt = LIABILITY_TYPES.has(effectiveType);
   const isOther = effectiveType === "Other";
-  // Credit card balances — and any "Other" account flagged as a liability —
-  // are stored negative (see signedBalance) so they subtract from net
-  // worth. Always show/accept the positive amount owed here, matching how
-  // everyone actually thinks about a balance they owe.
-  const storedAsNegative = isCreditCard || (existing?.is_liability ?? false);
+  // Credit Card / Loan balances — and any "Other" account flagged as a
+  // liability — are stored negative (see signedBalance) so they subtract
+  // from net worth. Always show/accept the positive amount owed here,
+  // matching how everyone actually thinks about a balance they owe.
+  const storedAsNegative = isUnambiguousDebt || (existing?.is_liability ?? false);
   const displayBalance = existing ? (storedAsNegative ? Math.abs(existing.balance) : existing.balance) : 0;
 
   // Base UI's Select only renders the selected item's *label* in the
@@ -125,7 +125,7 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
           )
         )}
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="acct-balance">{isCreditCard ? "Debt ($)" : "Balance ($)"}</Label>
+          <Label htmlFor="acct-balance">{isUnambiguousDebt ? "Debt ($)" : "Balance ($)"}</Label>
           <Input
             id="acct-balance"
             name="balance"
@@ -134,7 +134,7 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
             defaultValue={displayBalance}
             key={selected}
           />
-          {isCreditCard && (
+          {isUnambiguousDebt && (
             <p className="text-xs text-muted-foreground">Counts against net worth, not toward it.</p>
           )}
         </div>

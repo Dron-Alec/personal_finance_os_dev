@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { addAccountTemplate, removeAccountTemplate } from "@/lib/actions/account-templates";
 import { AccountTypeSelect } from "@/components/accounts/account-type-select";
 import { saveMonthlyBalances } from "@/lib/actions/data-entry";
-import { ACCOUNT_TYPES, signedBalance } from "@/lib/constants";
+import { ACCOUNT_TYPES, LIABILITY_TYPES, signedBalance } from "@/lib/constants";
 import { lastDayOfPreviousMonth, toDateInputValue } from "@/lib/date-utils";
 import { formatCurrency } from "@/lib/format";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
@@ -19,11 +19,12 @@ import { Label } from "@/components/ui/label";
 export type ExistingAccount = { id: number; name: string; balance: number; type: string; is_liability: boolean };
 export type AccountTemplate = { id: number; name: string; type: string };
 
-// Stored balances are already signed (negative for Credit Card / liability
-// accounts, see signedBalance) — inputs always show/accept the positive
-// amount, matching how everyone actually thinks about what they owe.
+// Stored balances are already signed (negative for Credit Card/Loan or
+// liability-flagged accounts, see signedBalance) — inputs always show/accept
+// the positive amount, matching how everyone actually thinks about what
+// they owe.
 function isNegativeType(type: string, isLiability: boolean): boolean {
-  return type === "Credit Card" || isLiability;
+  return LIABILITY_TYPES.has(type) || isLiability;
 }
 
 export function BalanceEntryForm({
@@ -116,7 +117,7 @@ export function BalanceEntryForm({
                       {t.name}{" "}
                       <span className="text-xs text-muted-foreground">
                         ({t.type}
-                        {t.type === "Credit Card" ? ", debt" : ""}, not yet created)
+                        {LIABILITY_TYPES.has(t.type) ? ", debt" : ""}, not yet created)
                       </span>
                     </Label>
                     <ConfirmActionButton
