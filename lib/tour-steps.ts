@@ -25,8 +25,8 @@ export const TOUR_STEPS: TourStep[] = [
     id: "suggested-accounts",
     path: "/data-entry",
     target: "suggested-accounts",
-    title: "Suggested Accounts",
-    body: "A checklist of suggested account names/types you haven't created yet — leave one at $0 to skip it. Remove a suggestion with the ✕ (asks to confirm) without touching any real account, or add your own with a name and a searchable type dropdown.",
+    title: "Add an Account",
+    body: "Expand this to see a checklist of account names/types you haven't created yet — enter a balance to create one, or leave it at $0 to skip. Remove a checklist item with the ✕ (asks to confirm) without touching any real account, or add your own with a name and a searchable type dropdown. Accounts typed \"Other\" get a checkbox here to mark them as debt.",
   },
   {
     id: "get-a-csv",

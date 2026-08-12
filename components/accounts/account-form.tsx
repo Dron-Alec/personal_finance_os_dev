@@ -125,7 +125,7 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
           )
         )}
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="acct-balance">{isCreditCard ? "Amount Owed ($)" : "Balance ($)"}</Label>
+          <Label htmlFor="acct-balance">{isCreditCard ? "Debt ($)" : "Balance ($)"}</Label>
           <Input
             id="acct-balance"
             name="balance"
@@ -155,7 +155,7 @@ export function AccountForm({ accounts }: { accounts: AccountOption[] }) {
                 defaultChecked={existing?.is_liability ?? false}
                 key={selected}
               />
-              This is a liability (subtracts from net worth)
+              This is a debt (subtracts from net worth)
             </Label>
           </div>
         )}

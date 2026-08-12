@@ -77,10 +77,10 @@ export async function saveMonthlyBalances(
     for (const template of templates ?? []) {
       const amount = templateBalances.get(template.id);
       if (amount === undefined) continue;
-      // No is_liability concept for templates (just suggestions) — an
-      // "Other" suggestion always defaults to an asset, same as before.
-      // Credit Card still auto-negates.
-      const balance = signedBalance(template.type, amount);
+      // Templates themselves don't store is_liability — the checklist row's
+      // own checkbox (only shown for "Other") decides it at creation time.
+      const isLiability = formData.get(`template_${template.id}_liability`) === "on";
+      const balance = signedBalance(template.type, amount, isLiability);
 
       const { data: account, error } = await supabase
         .from("accounts")
@@ -90,6 +90,7 @@ export async function saveMonthlyBalances(
           type: template.type,
           bank_format: template.bank_format,
           balance,
+          is_liability: isLiability,
           as_of_date: entryDate,
         })
         .select("id")
