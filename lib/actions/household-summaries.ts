@@ -61,10 +61,24 @@ export async function getCombinedAvailableMonths(): Promise<string[]> {
   return Array.from(months).sort().reverse();
 }
 
+// Distinct categories already scoped to spending (household_spending_summary
+// only ever has amount<0 rows), same as the individual page's own category
+// dropdown (app/(app)/spending/page.tsx derives dataCategories the same way,
+// from whatever categories actually appear in the data).
+export async function getCombinedAvailableCategories(): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("household_spending_summary").select("category");
+  if (error) throw new Error(error.message);
+
+  const categories = new Set<string>();
+  for (const r of data ?? []) if (r.category) categories.add(r.category);
+  return Array.from(categories).sort();
+}
+
 // household_spending_summary's WHERE clause already restricts rows to "my
 // household OR actively linked households" — no household_id filter needed
 // here, the view itself is the access boundary.
-export async function getCombinedSpendingSummary(month?: string): Promise<CombinedSpendingSummary> {
+export async function getCombinedSpendingSummary(month?: string, category?: string): Promise<CombinedSpendingSummary> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -75,6 +89,7 @@ export async function getCombinedSpendingSummary(month?: string): Promise<Combin
 
   let query = supabase.from("household_spending_summary").select("household_id, month, category, total_amount");
   if (month) query = query.eq("month", month);
+  if (category) query = query.eq("category", category);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
@@ -135,12 +150,16 @@ export type CombinedCashFlow = {
 
 // Total Spending comes from household_spending_summary (same
 // category-exclusion rule as the individual page's spendingRows — Internal
-// Transfer/Income categories don't count as spend). Total Income has no
-// category concept at all, matching how the individual page's own "Total
-// Income" card sums every positive-amount row unfiltered
-// (lib/spending-utils.ts computeSpendingMetrics) — so household_income_summary
-// (0022) intentionally carries no category column to filter on.
-export async function getCombinedCashFlow(month?: string): Promise<CombinedCashFlow> {
+// Transfer/Income categories don't count as spend), and narrows with the
+// `category` filter the same way. Total Income has no category concept at
+// all — household_income_summary (0022) intentionally carries no category
+// column — so a category filter never changes it: unlike the individual
+// Spending page (whose Total Income card is computed from the same
+// already-category-filtered row set as spending, and so incidentally drops
+// to $0 once you filter to a spending-only category), Combined's Total
+// Income stays the household's real total regardless of the category
+// filter, which is more useful than reproducing that drop-to-zero quirk.
+export async function getCombinedCashFlow(month?: string, category?: string): Promise<CombinedCashFlow> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -155,6 +174,7 @@ export async function getCombinedCashFlow(month?: string): Promise<CombinedCashF
     spendingQuery = spendingQuery.eq("month", month);
     incomeQuery = incomeQuery.eq("month", month);
   }
+  if (category) spendingQuery = spendingQuery.eq("category", category);
   const [{ data: spendingRows, error: spendingError }, { data: incomeRows, error: incomeError }] = await Promise.all([
     spendingQuery,
     incomeQuery,
