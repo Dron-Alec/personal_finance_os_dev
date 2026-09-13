@@ -65,17 +65,29 @@ export async function getCombinedSpendingSummary(month?: string): Promise<Combin
       r.household_id !== null && r.category !== null && r.total_amount !== null && !SPENDING_EXCLUDE_CATEGORIES.has(r.category),
   );
 
-  const perHousehold: Record<string, HouseholdCategoryTotal[]> = {};
+  // household_spending_summary is grouped by (household, month, category), so
+  // a household with the same category in more than one month yields
+  // multiple rows here — aggregate into one Map per household (mirroring
+  // combinedByCategory below) rather than pushing every row straight into
+  // the array, which produced duplicate category entries (and React key
+  // collisions) in the per-household pie chart/legend.
+  const perHouseholdByCategory = new Map<string, Map<string, number>>();
   const combinedByCategory = new Map<string, number>();
   // month comes back as a full date ("2026-07-01") from date_trunc — sliced
   // to "YYYY-MM" to match the individual page's x-axis labels.
   const monthlyEntries: { household_id: string; month: string; category: string; amount: number }[] = [];
   for (const r of rows) {
     const amount = Math.abs(Number(r.total_amount));
-    if (!perHousehold[r.household_id]) perHousehold[r.household_id] = [];
-    perHousehold[r.household_id].push({ category: r.category, amount });
+    if (!perHouseholdByCategory.has(r.household_id)) perHouseholdByCategory.set(r.household_id, new Map());
+    const catTotals = perHouseholdByCategory.get(r.household_id)!;
+    catTotals.set(r.category, (catTotals.get(r.category) ?? 0) + amount);
     combinedByCategory.set(r.category, (combinedByCategory.get(r.category) ?? 0) + amount);
     monthlyEntries.push({ household_id: r.household_id, month: r.month.slice(0, 7), category: r.category, amount });
+  }
+
+  const perHousehold: Record<string, HouseholdCategoryTotal[]> = {};
+  for (const [hid, catTotals] of perHouseholdByCategory) {
+    perHousehold[hid] = Array.from(catTotals, ([category, amount]) => ({ category, amount }));
   }
 
   const perHouseholdMonthly: Record<string, MonthlyCategoryRow[]> = {};
