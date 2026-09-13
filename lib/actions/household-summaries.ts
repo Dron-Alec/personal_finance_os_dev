@@ -8,11 +8,37 @@ import { buildCombinedNetWorthChartData, type HouseholdNetWorthBundle } from "@/
 
 export type HouseholdCategoryTotal = { category: string; amount: number };
 
+// Same row shape MonthlyStackedBarChart already consumes on the individual
+// Spending page (lib/spending-utils.ts buildMonthlyCategoryData) — a month
+// plus one numeric field per category, so the same chart component works
+// unmodified here.
+export type MonthlyCategoryRow = { month: string } & Record<string, number | string>;
+
 export type CombinedSpendingSummary = {
   householdId: string;
   combined: HouseholdCategoryTotal[];
   perHousehold: Record<string, HouseholdCategoryTotal[]>;
+  combinedMonthly: MonthlyCategoryRow[];
+  perHouseholdMonthly: Record<string, MonthlyCategoryRow[]>;
 };
+
+function buildMonthlyRows(entries: { month: string; category: string; amount: number }[]): MonthlyCategoryRow[] {
+  const months = new Map<string, Map<string, number>>();
+  const categories = new Set<string>();
+  for (const e of entries) {
+    categories.add(e.category);
+    if (!months.has(e.month)) months.set(e.month, new Map());
+    const catMap = months.get(e.month)!;
+    catMap.set(e.category, (catMap.get(e.category) ?? 0) + e.amount);
+  }
+  return Array.from(months.keys())
+    .sort()
+    .map((month) => {
+      const row: MonthlyCategoryRow = { month };
+      for (const cat of categories) row[cat] = months.get(month)!.get(cat) ?? 0;
+      return row;
+    });
+}
 
 // household_spending_summary's WHERE clause already restricts rows to "my
 // household OR actively linked households" — no household_id filter needed
@@ -41,16 +67,94 @@ export async function getCombinedSpendingSummary(month?: string): Promise<Combin
 
   const perHousehold: Record<string, HouseholdCategoryTotal[]> = {};
   const combinedByCategory = new Map<string, number>();
+  // month comes back as a full date ("2026-07-01") from date_trunc — sliced
+  // to "YYYY-MM" to match the individual page's x-axis labels.
+  const monthlyEntries: { household_id: string; month: string; category: string; amount: number }[] = [];
   for (const r of rows) {
     const amount = Math.abs(Number(r.total_amount));
     if (!perHousehold[r.household_id]) perHousehold[r.household_id] = [];
     perHousehold[r.household_id].push({ category: r.category, amount });
     combinedByCategory.set(r.category, (combinedByCategory.get(r.category) ?? 0) + amount);
+    monthlyEntries.push({ household_id: r.household_id, month: r.month.slice(0, 7), category: r.category, amount });
+  }
+
+  const perHouseholdMonthly: Record<string, MonthlyCategoryRow[]> = {};
+  for (const hid of new Set(monthlyEntries.map((e) => e.household_id))) {
+    perHouseholdMonthly[hid] = buildMonthlyRows(monthlyEntries.filter((e) => e.household_id === hid));
   }
 
   return {
     householdId,
     combined: Array.from(combinedByCategory, ([category, amount]) => ({ category, amount })),
+    perHousehold,
+    combinedMonthly: buildMonthlyRows(monthlyEntries),
+    perHouseholdMonthly,
+  };
+}
+
+export type HouseholdCashFlow = { totalSpending: number; totalIncome: number; netCashFlow: number };
+
+export type CombinedCashFlow = {
+  householdId: string;
+  combined: HouseholdCashFlow;
+  perHousehold: Record<string, HouseholdCashFlow>;
+};
+
+// Total Spending comes from household_spending_summary (same
+// category-exclusion rule as the individual page's spendingRows — Internal
+// Transfer/Income categories don't count as spend). Total Income has no
+// category concept at all, matching how the individual page's own "Total
+// Income" card sums every positive-amount row unfiltered
+// (lib/spending-utils.ts computeSpendingMetrics) — so household_income_summary
+// (0022) intentionally carries no category column to filter on.
+export async function getCombinedCashFlow(): Promise<CombinedCashFlow> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated.");
+
+  const householdId = await getCurrentHouseholdId(supabase, user.id);
+
+  const [{ data: spendingRows, error: spendingError }, { data: incomeRows, error: incomeError }] = await Promise.all([
+    supabase.from("household_spending_summary").select("household_id, category, total_amount"),
+    supabase.from("household_income_summary").select("household_id, total_income"),
+  ]);
+  if (spendingError) throw new Error(spendingError.message);
+  if (incomeError) throw new Error(incomeError.message);
+
+  const spendingByHousehold = new Map<string, number>();
+  for (const r of spendingRows ?? []) {
+    if (r.household_id === null || r.category === null || r.total_amount === null) continue;
+    if (SPENDING_EXCLUDE_CATEGORIES.has(r.category)) continue;
+    spendingByHousehold.set(r.household_id, (spendingByHousehold.get(r.household_id) ?? 0) + Math.abs(Number(r.total_amount)));
+  }
+
+  const incomeByHousehold = new Map<string, number>();
+  for (const r of incomeRows ?? []) {
+    if (r.household_id === null || r.total_income === null) continue;
+    incomeByHousehold.set(r.household_id, (incomeByHousehold.get(r.household_id) ?? 0) + Number(r.total_income));
+  }
+
+  const householdIds = new Set([...spendingByHousehold.keys(), ...incomeByHousehold.keys()]);
+  const perHousehold: Record<string, HouseholdCashFlow> = {};
+  let combinedSpending = 0;
+  let combinedIncome = 0;
+  for (const hid of householdIds) {
+    const totalSpending = spendingByHousehold.get(hid) ?? 0;
+    const totalIncome = incomeByHousehold.get(hid) ?? 0;
+    perHousehold[hid] = { totalSpending, totalIncome, netCashFlow: totalIncome - totalSpending };
+    combinedSpending += totalSpending;
+    combinedIncome += totalIncome;
+  }
+
+  return {
+    householdId,
+    combined: {
+      totalSpending: combinedSpending,
+      totalIncome: combinedIncome,
+      netCashFlow: combinedIncome - combinedSpending,
+    },
     perHousehold,
   };
 }
