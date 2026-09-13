@@ -40,6 +40,27 @@ function buildMonthlyRows(entries: { month: string; category: string; amount: nu
     });
 }
 
+// Union of both views' `month` columns rather than just one — a household
+// with, say, only income in a given month (no spending rows at all) would
+// otherwise silently drop that month from the picker. Values are full dates
+// ("2026-07-01", from date_trunc) so they can be passed straight back into
+// getCombinedCashFlow/getCombinedSpendingSummary's own `.eq("month", …)`
+// filters without reformatting.
+export async function getCombinedAvailableMonths(): Promise<string[]> {
+  const supabase = await createClient();
+  const [{ data: spendingMonths, error: spendingError }, { data: incomeMonths, error: incomeError }] = await Promise.all([
+    supabase.from("household_spending_summary").select("month"),
+    supabase.from("household_income_summary").select("month"),
+  ]);
+  if (spendingError) throw new Error(spendingError.message);
+  if (incomeError) throw new Error(incomeError.message);
+
+  const months = new Set<string>();
+  for (const r of spendingMonths ?? []) if (r.month) months.add(r.month);
+  for (const r of incomeMonths ?? []) if (r.month) months.add(r.month);
+  return Array.from(months).sort().reverse();
+}
+
 // household_spending_summary's WHERE clause already restricts rows to "my
 // household OR actively linked households" — no household_id filter needed
 // here, the view itself is the access boundary.
@@ -119,7 +140,7 @@ export type CombinedCashFlow = {
 // Income" card sums every positive-amount row unfiltered
 // (lib/spending-utils.ts computeSpendingMetrics) — so household_income_summary
 // (0022) intentionally carries no category column to filter on.
-export async function getCombinedCashFlow(): Promise<CombinedCashFlow> {
+export async function getCombinedCashFlow(month?: string): Promise<CombinedCashFlow> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -128,9 +149,15 @@ export async function getCombinedCashFlow(): Promise<CombinedCashFlow> {
 
   const householdId = await getCurrentHouseholdId(supabase, user.id);
 
+  let spendingQuery = supabase.from("household_spending_summary").select("household_id, category, total_amount");
+  let incomeQuery = supabase.from("household_income_summary").select("household_id, total_income");
+  if (month) {
+    spendingQuery = spendingQuery.eq("month", month);
+    incomeQuery = incomeQuery.eq("month", month);
+  }
   const [{ data: spendingRows, error: spendingError }, { data: incomeRows, error: incomeError }] = await Promise.all([
-    supabase.from("household_spending_summary").select("household_id, category, total_amount"),
-    supabase.from("household_income_summary").select("household_id, total_income"),
+    spendingQuery,
+    incomeQuery,
   ]);
   if (spendingError) throw new Error(spendingError.message);
   if (incomeError) throw new Error(incomeError.message);

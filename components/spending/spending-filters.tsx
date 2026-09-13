@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { XIcon } from "lucide-react";
 import { ALL } from "@/lib/spending-utils";
@@ -12,7 +13,53 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+// Debounced separately from the other (Select-driven) filters below, which
+// push on every change with no typing involved — a text input pushing a URL
+// update per keystroke would thrash the router and refetch on every letter.
+function SearchInput() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlValue = searchParams.get("search") ?? "";
+  const [value, setValue] = useState(urlValue);
+  // Mirrors urlValue so the render-time adjustment below can tell "the URL
+  // changed externally (back/forward nav, a clear elsewhere)" apart from
+  // "we're still debouncing the user's own typing" — the React-docs pattern
+  // for syncing state from a prop without an effect (avoids the
+  // set-state-in-effect lint, and the extra render it'd otherwise cause).
+  const [lastUrlValue, setLastUrlValue] = useState(urlValue);
+  if (urlValue !== lastUrlValue) {
+    setLastUrlValue(urlValue);
+    setValue(urlValue);
+  }
+
+  useEffect(() => {
+    if (value === urlValue) return;
+    const timeout = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value.trim()) params.set("search", value);
+      else params.delete("search");
+      router.push(`/spending?${params.toString()}`);
+    }, 300);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when the typed value changes; re-including searchParams/urlValue/router would re-fire this debounce on every navigation this effect itself causes.
+  }, [value]);
+
+  return (
+    <div className="flex min-w-56 flex-col gap-1.5">
+      <Label htmlFor="transaction-search">Search description</Label>
+      <Input
+        id="transaction-search"
+        type="text"
+        placeholder="e.g. Starbucks"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+    </div>
+  );
+}
 
 export function SpendingFilters({
   months,
@@ -53,6 +100,7 @@ export function SpendingFilters({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-4">
+        <SearchInput />
         <div className="flex flex-col gap-1.5">
           <Label>Month</Label>
           <Select value={month} onValueChange={(v) => setParam("month", v ?? ALL)}>

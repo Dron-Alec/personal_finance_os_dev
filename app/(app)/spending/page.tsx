@@ -20,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export default async function SpendingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; category?: string; bank?: string; exclude?: string }>;
+  searchParams: Promise<{ month?: string; category?: string; bank?: string; exclude?: string; search?: string }>;
 }) {
   const params = await searchParams;
   const supabase = await createClient();
@@ -47,6 +47,7 @@ export default async function SpendingPage({
     category: params.category ?? ALL,
     bank: params.bank ?? ALL,
     excludeCategories: (params.exclude ?? "").split(",").filter(Boolean),
+    search: params.search ?? "",
   };
 
   const months = Array.from(new Set(all.map((t) => t.date.slice(0, 7)))).sort().reverse();
