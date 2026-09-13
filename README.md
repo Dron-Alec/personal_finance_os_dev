@@ -8,11 +8,14 @@ A personal finance dashboard built with Next.js and Supabase. Track net worth ov
 
 - **Transaction import** — upload CSV exports from Citi, Discover, Axos, Wells Fargo, Chase, Bank of America, and more
 - **Spending analysis** — automatic categorization, pie/bar charts, monthly breakdowns, and re-categorization tools
-- **Net worth tracking** — snapshot-based history with a chart and quarterly targets
-- **Account balances** — track checking, savings, crypto, 401k, Roth IRA, taxable brokerage, and more
+- **Net worth tracking** — snapshot-based history with a chart, filterable by account
+- **Goals** — target-amount-by-date goals (net worth or a single account) with contribution-pace plans and a chart overlay showing projected vs. actual
+- **Account balances** — track checking, savings, credit cards, loans, crypto, 401k, Roth/Traditional IRA, real estate, and more; liabilities are signed correctly in net worth
 - **Manual balance entry** — backfill missed months by entering all account balances for a specific date in one form
-- **Private per-user data** — each account's data is isolated via Postgres Row Level Security; nobody else can see it
-- **Email/password + mandatory MFA** — every account enrolls a TOTP authenticator app right after signup
+- **Household / Combined view** — invite a partner to link households and see combined net worth, cash flow, and spending, without merging or exposing either person's individual transactions (see [Combined / Household View](#combined--household-view) below)
+- **Private per-user data** — each household's data is isolated via Postgres Row Level Security; a linked household only ever sees pre-aggregated summaries, never raw transactions
+- **Email/password + mandatory MFA** — every account enrolls a TOTP authenticator app right after signup; self-serve password reset and account deletion
+- **Interactive product tour, light/dark theme** — a guided first-run walkthrough and a theme toggle that follows system preference by default
 
 ## Stack
 
@@ -21,11 +24,7 @@ Next.js (App Router, TypeScript) · Tailwind + shadcn/ui · Recharts · Supabase
 ## Setup
 
 1. Create a Supabase project.
-2. Apply the migrations in order via the Supabase SQL Editor or CLI:
-   ```bash
-   supabase/migrations/0001_init.sql
-   supabase/migrations/0002_seed_trigger.sql
-   ```
+2. Apply every file in [supabase/migrations/](supabase/migrations/) in order (they're numbered — `0001_init.sql`, `0002_seed_trigger.sql`, … through the latest) via the Supabase SQL Editor or CLI. Schema changes always land as a new numbered migration rather than editing an old one.
 3. Copy `.env.local.example` to `.env.local` and fill in your project's URL and anon key (Supabase dashboard → Project Settings → API).
 4. Install dependencies and run the dev server:
    ```bash
@@ -113,6 +112,24 @@ confidence for each is noted in its test case. Axos, Navy Federal, USAA, TD
 Bank, Truist, Regions, Charles Schwab, Fidelity, SoFi, Marcus, Chime, Cash
 App, and Robinhood are known to exist but have no verified header sample
 yet (`it.todo` placeholders mark them) — real samples welcome.
+
+## Combined / Household View
+
+Every user starts in their own solo household — their accounts, transactions, and balances stay private, scoped by Postgres RLS, exactly as if the feature didn't exist.
+
+To see a shared picture with a partner:
+
+1. **Invite.** From **Settings → Household**, invite a partner by email (`inviteToHousehold` in [lib/actions/households.ts](lib/actions/households.ts)). This creates a `household_invites` row with a token, not a household merge.
+2. **Accept.** The invited partner opens the link (`/invite/[token]`), which links the two *households* via a `household_links` row — each household keeps its own accounts and transactions, owned and editable only by its own members. Nothing is transferred or merged.
+3. **Combined tab.** Once linked, a **Combined** tab appears for both people with a **Combined / View by person** toggle ([components/combined/view-toggle.tsx](components/combined/view-toggle.tsx)), showing three sections:
+   - **Net Worth** — [components/combined/combined-net-worth-section.tsx](components/combined/combined-net-worth-section.tsx)
+   - **Cash Flow** — Total Spending / Total Income / Net Cash Flow, combined or per-household ([components/combined/combined-cashflow-section.tsx](components/combined/combined-cashflow-section.tsx))
+   - **Spending** — category pie chart plus a monthly stacked-bar breakdown ([components/combined/combined-spending-section.tsx](components/combined/combined-spending-section.tsx))
+4. **Revoke.** Either person can revoke the link from Settings at any time — this immediately removes the Combined tab for both sides and doesn't touch either household's own data.
+
+**Privacy boundary:** the combined views never read transaction-level data from a linked household. They query Postgres views — `household_spending_summary` and `household_income_summary` (`supabase/migrations/0015_household_summary_views.sql`, `0022_household_income_summary.sql`) — that pre-aggregate to category/month totals *inside* the view definition, are declared `security_barrier` (so Postgres can't push a caller predicate underneath the aggregation to leak row-level values), and gate access via `private.is_household_member()` / `private.is_linked_household()` in their `WHERE` clause. A linked partner can see "you spent $340 on Groceries in July," never the individual line items behind that number.
+
+All `lib/actions/household-summaries.ts` functions (`getCombinedNetWorth`, `getCombinedCashFlow`, `getCombinedSpendingSummary`) follow the same shape: fetch the caller's `household_id`, query the summary view (which self-filters to "my household OR actively linked households"), and group into `combined` + `perHousehold` results for the toggle.
 
 ## Backfilling Missing Months
 

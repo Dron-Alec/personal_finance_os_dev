@@ -11,10 +11,14 @@ A Next.js app for tracking personal finances: net worth over time, spending
 habits from bank/credit card statements, and account balances. Deployed on
 Vercel, backed by Supabase (Postgres + Auth with mandatory TOTP MFA).
 
-Each user has their own private data (RLS-scoped by `auth.uid()`). There's no
-shared household/combined view yet — Alec and Haley each get their own
-account and see only their own tab. A "join finances" combined view is a
-possible future feature, deliberately not built yet.
+Each household has its own private data (RLS-scoped, `accounts`/`transactions`
+by `household_id`, everything else by `user_id`). Every user starts in their
+own solo household. Two users can link households (Settings → invite by
+email → recipient accepts at `/invite/[token]`) to unlock a **Combined** tab
+showing aggregated net worth, cash flow, and spending — see the README's
+"Combined / Household View" section for the full flow and the privacy
+boundary (linked households only ever see pre-aggregated summary views,
+never each other's transactions).
 
 ## Stack
 - Next.js 16 (App Router, TypeScript, React 19), Tailwind + shadcn/ui (Base UI
@@ -53,8 +57,10 @@ Alec has a Roth 401k only (no traditional 401k).
 | Other Investments | $3,100.00 |
 | Coinbase | $1,200.00 |
 
-This data was never migrated into the new Supabase backend (the rewrite
-started fresh) — re-enter it via Data Entry once each account exists.
+This was migrated into the live Supabase backend from the old Streamlit
+database (`lfqezqcymxcdseqcsbfh`, `person='alec'` rows) — Alec's account no
+longer needs manual re-entry. Haley's (`person='haley'`) data has not been
+fully migrated the same way; only ad hoc pieces have been moved over so far.
 
 ## Data entry workflow
 - **Month-end balances** → Data Entry tab → updates accounts + creates net worth snapshot
@@ -73,17 +79,23 @@ started fresh) — re-enter it via Data Entry once each account exists.
 - Live project: **Personal_Finances_OS** (ref `ycvxvdtigwkjpwgoiqhz`, region
   ca-central-1) — separate from the old Streamlit-era `AlecHaleyFinances` /
   `lfqezqcymxcdseqcsbfh` project, which is no longer used.
-- Schema lives in `supabase/migrations/`, applied in order: `0001_init.sql`,
-  `0002_seed_trigger.sql`, `0003_account_templates.sql`,
-  `0004_account_template_defaults.sql`. All four are already applied to the
-  live project — run them in order against any fresh project.
+- Schema lives in `supabase/migrations/`, all applied in order to the live
+  project (currently `0001` through `0022` — always check the directory for
+  the actual latest, this note goes stale fast). New schema changes always
+  land as a new numbered migration, never an edit to an old one.
 - Tables: `accounts`, `account_balance_history`, `account_templates`,
-  `transactions`, `nw_snapshots`, `category_rules`, `goals` — all scoped by
-  `user_id`, RLS enabled + forced on every table.
-- `accounts` has a unique constraint on `(user_id, name)`; account `type` is
-  set at creation only — the app never updates it once created.
-  `account_templates` has the same `(user_id, name)` uniqueness but is
-  fully editable (it's just suggestions, not real balances).
+  `transactions`, `nw_snapshots`, `category_rules`, `goals`, `households`,
+  `household_members`, `household_invites`, `household_links`,
+  `user_settings`, `custom_bank_formats` — RLS enabled + forced on every
+  table. `accounts` and `transactions` are scoped by `household_id`
+  (migrated off `user_id` in `0009`–`0013`); everything else by `user_id`.
+- `accounts` has a unique constraint on `(household_id, name)`; account
+  `type` is set at creation only — the app never updates it once created.
+  `transactions` has a unique constraint on
+  `(household_id, date, description, amount)` so re-importing the same
+  statement is a no-op. `account_templates` has a `(user_id, name)`
+  uniqueness but is fully editable (it's just suggestions, not real
+  balances).
 - `handle_new_user()` trigger seeds `category_rules` and `account_templates`
   for every new signup (default keyword map, and starter suggestions:
   Checking, Savings, Coinbase/Crypto, 401k, Roth IRA, Taxable Brokerage,
