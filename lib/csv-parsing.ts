@@ -70,8 +70,20 @@ export function extractHeaderSample(csvText: string): {
 
 // Banks whose export splits money out/in across two columns instead of one
 // signed Amount column (Capital One's "Debit"/"Credit", PNC's
-// "Withdrawals"/"Deposits").
-const SPLIT_DEBIT_CREDIT_BANKS: readonly BankFormat[] = ["Citi Checking", "Citi Credit", "Capital One Credit", "PNC"];
+// "Withdrawals"/"Deposits", Axos's "Amount Debit"/"Amount Credit" — the
+// latter previously fell into the "as-is" branch below, whose findCol(cols,
+// ["Amount"]) happened to match "Amount Debit" (first column containing
+// "amount") for every row: real debits kept their magnitude but lost the
+// negative sign, and every credit (payroll, incoming transfers) silently
+// became $0 since "Amount Debit" is blank on those rows).
+const SPLIT_DEBIT_CREDIT_BANKS: readonly BankFormat[] = [
+  "Citi Checking",
+  "Citi Credit",
+  "Capital One Credit",
+  "PNC",
+  "Axos Checking",
+  "Axos Savings",
+];
 
 // Banks whose single Amount column is positive for a charge and negative
 // for a payment/credit — the opposite of a checking account's "negative =
@@ -112,8 +124,8 @@ export function parseCsvForBank(bankFormat: BankFormat, csvText: string): Parsed
       const amtCol = findCol(columns, ["Amount"]);
       amount = amtCol ? -cleanVal(row[amtCol]) : 0;
     } else {
-      // WF, Chase, BofA, Axos, US Bank, Ally, Capital One 360, Venmo,
-      // PayPal: negative = debit/expense as-is.
+      // WF, Chase, BofA, US Bank, Ally, Capital One 360, Venmo, PayPal:
+      // negative = debit/expense as-is.
       //
       // Apple Card is also parsed here, but its sign convention wasn't
       // independently verifiable from public sources — if a real Apple

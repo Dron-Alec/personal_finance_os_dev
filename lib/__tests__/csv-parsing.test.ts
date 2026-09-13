@@ -67,13 +67,12 @@ describe("parseCsvForBank", () => {
     expect(txs[0].amount).toBe(200);
   });
 
-  it("Wells Fargo / Chase / BofA / Axos / US Bank / Ally / Capital One 360 / Venmo / PayPal / Apple Card: uses Amount as-is", () => {
+  it("Wells Fargo / Chase / BofA / US Bank / Ally / Capital One 360 / Venmo / PayPal / Apple Card: uses Amount as-is", () => {
     const csv = "Date,Amount,Description\n04/01/2026,-75.00,SHELL OIL\n04/02/2026,2000.00,DIRECT DEPOSIT";
     for (const bank of [
       "Wells Fargo Checking",
       "Chase Credit",
       "Bank of America Checking",
-      "Axos Checking",
       "US Bank",
       "Ally Bank",
       "Capital One 360",
@@ -85,6 +84,19 @@ describe("parseCsvForBank", () => {
       expect(txs[0].amount).toBe(-75);
       expect(txs[1].amount).toBe(2000);
     }
+  });
+
+  it("Axos Checking/Savings: uses Amount Debit/Amount Credit as a split (real export header, not a single signed Amount column)", () => {
+    const csv =
+      "Account Number, Transaction Number, Date, Transaction Type,Description, Memo, Amount Debit, Amount Credit, Balance\n" +
+      "100009896752,0x1,07/08/2026,CREDIT,PAYROLL CROWE LLPPPD 04300009,PAYROLL CROWE LLPPPD,,2362.12,\n" +
+      "100009896752,0x2,07/08/2026,DEBIT,From: Checking *6752 To: Savings,From: Checking *6752 To: Savings *6760,2300.00,,";
+    const txsChecking = parseCsvForBank("Axos Checking", csv);
+    expect(txsChecking[0].amount).toBe(2362.12);
+    expect(txsChecking[1].amount).toBe(-2300);
+    const txsSavings = parseCsvForBank("Axos Savings", csv);
+    expect(txsSavings[0].amount).toBe(2362.12);
+    expect(txsSavings[1].amount).toBe(-2300);
   });
 
   it("American Express: negates the Amount column, same convention as Discover", () => {
