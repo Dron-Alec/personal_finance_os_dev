@@ -114,7 +114,10 @@ export function parseCsvForBank(bankFormat: BankFormat, csvText: string): Parsed
       const creditCol = findCol(columns, ["Credit", "Deposit", "Deposits"]);
       const amtCol = findCol(columns, ["Amount"]);
       if (debitCol && creditCol) {
-        amount = cleanVal(row[creditCol]) - cleanVal(row[debitCol]);
+        // abs(): Citi Credit writes credits (payments, statement credits) as
+        // negative numbers in the Credit column, which otherwise flipped them
+        // into charges. Column choice alone carries the sign.
+        amount = Math.abs(cleanVal(row[creditCol])) - Math.abs(cleanVal(row[debitCol]));
       } else if (amtCol) {
         amount = cleanVal(row[amtCol]);
       } else {

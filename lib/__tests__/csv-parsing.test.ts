@@ -47,6 +47,13 @@ describe("parseCsvForBank", () => {
     expect(txs[1]).toMatchObject({ description: "PAYROLL DEPOSIT", amount: 1500 });
   });
 
+  it("Citi Credit: a payment written as a negative Credit stays a positive credit", () => {
+    const csv =
+      "Status,Date,Description,Debit,Credit\nCleared,09/09/2026,ELECTRONIC PAYMENT-THANK YOU,,-795.14\nCleared,09/10/2026,CHIPOTLE,18.42,";
+    const txs = parseCsvForBank("Citi Credit", csv);
+    expect(txs.map((t) => t.amount)).toEqual([795.14, -18.42]);
+  });
+
   it("Citi Credit: falls back to a single Amount column", () => {
     const csv = "Date,Description,Amount\n02/01/2026,CHIPOTLE,-18.42";
     const txs = parseCsvForBank("Citi Credit", csv);
