@@ -22,7 +22,13 @@ export default async function NetWorthPage() {
     supabase.from("account_balance_history").select("account_id, balance, as_of_date"),
   ]);
 
-  const sortedSnapshots = [...(snapshots ?? [])].sort((a, b) => (a.date < b.date ? -1 : 1));
+  // id as tiebreaker: same-date rows exist (re-saved entries, migrated
+  // per-account artifacts) and `.at(-1)`/`.at(-2)` below need a deterministic
+  // "most recently saved" order, not whatever Postgres happens to return for
+  // a tied `.order("date")`.
+  const sortedSnapshots = [...(snapshots ?? [])].sort((a, b) =>
+    a.date === b.date ? a.id - b.id : a.date < b.date ? -1 : 1,
+  );
   const latest = sortedSnapshots.at(-1);
 
   const accountList = accounts ?? [];
