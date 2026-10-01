@@ -12,7 +12,7 @@ export function buildNetWorthChartData(snapshots: Snapshot[], goalCurves: GoalCu
   function getRow(date: string): NetWorthPoint {
     const existing = byDate.get(date);
     if (existing) return existing;
-    const row: NetWorthPoint = { date, label: format(parseLocalDate(date), "MMM yyyy"), netWorth: null };
+    const row: NetWorthPoint = { date, label: format(parseLocalDate(date), "MMM d, yyyy"), netWorth: null };
     byDate.set(date, row);
     return row;
   }
