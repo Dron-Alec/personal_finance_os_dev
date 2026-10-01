@@ -149,7 +149,7 @@ export default async function NetWorthPage() {
               <CardTitle>Snapshot History</CardTitle>
             </CardHeader>
             <CardContent>
-              <SnapshotHistory snapshots={sortedSnapshots} />
+              <SnapshotHistory snapshots={sortedSnapshots} accounts={accountList} history={historyList} />
             </CardContent>
           </Card>
         </>

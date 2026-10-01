@@ -40,3 +40,28 @@ export function buildAccountOverlayData(
     return row;
   });
 }
+
+export type AccountBalanceAsOf = { id: number; name: string; balance: number | null };
+
+/**
+ * Each account's last known balance on or before `date` — the breakdown
+ * behind a net worth snapshot, reconstructed from account_balance_history
+ * rather than stored at snapshot time, so it works for snapshots entered
+ * before this feature existed too. `date` doesn't need to be one of the
+ * dates in `history` (a snapshot is often entered on a different day than
+ * any account update) — same carry-forward rule as buildAccountOverlayData,
+ * evaluated at one arbitrary target date instead of every date in history.
+ */
+export function getAccountBalancesAsOf(
+  accounts: OverlayAccount[],
+  history: { account_id: number; balance: number; as_of_date: string }[],
+  date: string,
+): AccountBalanceAsOf[] {
+  return accounts.map((a) => {
+    const last = history
+      .filter((h) => h.account_id === a.id && h.as_of_date <= date)
+      .sort((x, y) => compareDateStrings(x.as_of_date, y.as_of_date))
+      .at(-1);
+    return { id: a.id, name: a.name, balance: last ? Number(last.balance) : null };
+  });
+}
