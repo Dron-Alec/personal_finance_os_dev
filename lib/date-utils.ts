@@ -8,8 +8,16 @@ export function compareDateStrings(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** Last day of the previous calendar month — default for month-end balance entry. */
+/**
+ * Last day of the most recently *completed* month — default for month-end
+ * balance entry. Naively doing `lastDayOfMonth(subMonths(date, 1))`
+ * undercounts when `date` is itself a month's last day (e.g. Sep 30):
+ * subMonths steps back by day-of-month to Aug 30, then rounds to Aug 31 —
+ * skipping September entirely on the one day it's actually ready to enter.
+ */
 export function lastDayOfPreviousMonth(date: Date = new Date()): Date {
+  const endOfThisMonth = lastDayOfMonth(date);
+  if (date.getDate() === endOfThisMonth.getDate()) return endOfThisMonth;
   return lastDayOfMonth(subMonths(date, 1));
 }
 
