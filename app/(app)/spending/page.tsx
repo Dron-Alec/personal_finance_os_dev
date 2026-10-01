@@ -55,10 +55,7 @@ export default async function SpendingPage({
   const banks = Array.from(new Set(all.map((t) => t.bank))).sort();
 
   const filtered = applyFilters(all, filters);
-  const { totalSpending, totalIncome, netCashFlow, spendingRows } = computeSpendingMetrics(
-    filtered,
-    filters,
-  );
+  const { totalSpending, totalIncome, netCashFlow, spendingRows } = computeSpendingMetrics(filtered);
   const categoryTotals = buildCategoryTotals(spendingRows);
   const pieData = categoryTotals.map((c) => ({ ...c, color: getCategoryColor(c.name) }));
 

@@ -35,18 +35,21 @@ export function applyFilters(
   });
 }
 
-export function computeSpendingMetrics(filtered: SpendingTransaction[], filters: SpendingFilters) {
-  // Internal Transfer / Income are excluded from spending totals unless the
-  // user explicitly filtered down to one of those categories.
-  const spendingRows =
-    filters.category === ALL
-      ? filtered.filter((t) => !SPENDING_EXCLUDE_CATEGORIES.has(t.category))
-      : filtered;
+export function computeSpendingMetrics(filtered: SpendingTransaction[]) {
+  // Internal Transfer / Income never count as spending, even if the user
+  // explicitly filters down to one of those categories -- matches the
+  // Combined page's unconditional exclusion (lib/actions/household-summaries.ts).
+  // The transaction table below still shows them; only the totals/graphs don't.
+  const spendingRows = filtered.filter((t) => !SPENDING_EXCLUDE_CATEGORIES.has(t.category));
 
   const totalSpending = spendingRows
     .filter((t) => t.amount < 0)
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-  const totalIncome = filtered.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+  // Inflows from your own accounts aren't income either -- mirrors
+  // household_income_summary (0023).
+  const totalIncome = filtered
+    .filter((t) => t.amount > 0 && t.category !== "Internal Transfer")
+    .reduce((sum, t) => sum + t.amount, 0);
 
   return {
     totalSpending,
