@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { compareDateStrings, parseLocalDate } from "@/lib/date-utils";
 import type { BalancePoint } from "@/lib/goals";
 import type { NetWorthPoint } from "@/components/charts/net-worth-chart";
 
@@ -27,5 +27,5 @@ export function buildNetWorthChartData(snapshots: Snapshot[], goalCurves: GoalCu
     }
   }
 
-  return Array.from(byDate.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
+  return Array.from(byDate.values()).sort((a, b) => compareDateStrings(a.date, b.date));
 }

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { BalanceHistoryChart, type BalancePoint, type GoalLine, type GoalSeries } from "@/components/charts/balance-history-chart";
 import { getAccountColor } from "@/lib/chart-colors";
-import { parseLocalDate } from "@/lib/date-utils";
+import { compareDateStrings, parseLocalDate } from "@/lib/date-utils";
 import type { BalancePoint as GoalCurvePoint } from "@/lib/goals";
 import {
   Select,
@@ -42,7 +42,7 @@ export function BalanceHistorySection({
     () =>
       history
         .filter((h) => String(h.account_id) === selectedId)
-        .sort((a, b) => (a.as_of_date < b.as_of_date ? -1 : 1)),
+        .sort((a, b) => compareDateStrings(a.as_of_date, b.as_of_date)),
     [history, selectedId],
   );
 
@@ -61,7 +61,7 @@ export function BalanceHistorySection({
       const key = `goal_${curve.id}`;
       for (const point of curve.points) getRow(point.date)[key] = point.balance;
     }
-    return Array.from(byDate.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
+    return Array.from(byDate.values()).sort((a, b) => compareDateStrings(a.date, b.date));
   }, [rows, goalCurvesByAccount, selectedId]);
 
   if (accounts.length === 0) return null;

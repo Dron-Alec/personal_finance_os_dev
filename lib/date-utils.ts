@@ -1,5 +1,13 @@
 import { lastDayOfMonth, subMonths } from "date-fns";
 
+/** Ascending comparator for YYYY-MM-DD strings — `a < b ? -1 : 1` (seen
+ * copy-pasted across this codebase) returns 1 for equal dates instead of 0,
+ * breaking Array.sort's stability guarantee for same-date rows (re-saved
+ * entries, migrated duplicates). */
+export function compareDateStrings(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 /** Last day of the previous calendar month — default for month-end balance entry. */
 export function lastDayOfPreviousMonth(date: Date = new Date()): Date {
   return lastDayOfMonth(subMonths(date, 1));

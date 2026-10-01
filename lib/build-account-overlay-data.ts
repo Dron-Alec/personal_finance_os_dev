@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { compareDateStrings, parseLocalDate } from "@/lib/date-utils";
 
 export type OverlayAccount = { id: number; name: string };
 export type OverlayRow = { date: string; label: string } & Record<string, number | string | null>;
@@ -23,7 +23,7 @@ export function buildAccountOverlayData(
     const list = byAccount.get(h.account_id);
     if (list) list.push({ date: h.as_of_date, balance: Number(h.balance) });
   }
-  for (const list of byAccount.values()) list.sort((a, b) => (a.date < b.date ? -1 : 1));
+  for (const list of byAccount.values()) list.sort((a, b) => compareDateStrings(a.date, b.date));
 
   const cursors = new Map<number, number>();
   for (const a of accounts) cursors.set(a.id, -1);

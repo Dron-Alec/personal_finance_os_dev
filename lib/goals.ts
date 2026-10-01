@@ -1,4 +1,4 @@
-import { parseLocalDate, toDateInputValue } from "@/lib/date-utils";
+import { compareDateStrings, parseLocalDate, toDateInputValue } from "@/lib/date-utils";
 
 export type ContributionModel = "flat" | "growing" | "lump_flat";
 
@@ -227,7 +227,7 @@ export function computeGoalProgress(
   // latest point at or before (today - window); if history doesn't reach
   // back that far, fall back to the oldest point available and use
   // whatever span that actually spans instead of failing outright.
-  const sorted = [...balanceHistory].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const sorted = [...balanceHistory].sort((a, b) => compareDateStrings(a.date, b.date));
   let actualPaceMonthly: number | null = null;
   let actualPaceWindowMonths = 0;
   if (sorted.length > 0) {

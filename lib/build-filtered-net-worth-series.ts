@@ -1,3 +1,5 @@
+import { compareDateStrings } from "@/lib/date-utils";
+
 /**
  * A net worth series restricted to a chosen subset of accounts, for the
  * chart's account-filter control. Unlike `nw_snapshots` (a total captured
@@ -18,7 +20,7 @@ export function buildFilteredNetWorthSeries(
     const list = byAccount.get(h.account_id);
     if (list) list.push({ date: h.as_of_date, balance: Number(h.balance) });
   }
-  for (const list of byAccount.values()) list.sort((a, b) => (a.date < b.date ? -1 : 1));
+  for (const list of byAccount.values()) list.sort((a, b) => compareDateStrings(a.date, b.date));
 
   const dates = Array.from(
     new Set(history.filter((h) => byAccount.has(h.account_id)).map((h) => h.as_of_date)),
