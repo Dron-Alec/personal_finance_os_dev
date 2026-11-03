@@ -14,7 +14,8 @@ A personal finance dashboard built with Next.js and Supabase. Track net worth ov
 - **Manual balance entry** — backfill missed months by entering all account balances for a specific date in one form
 - **Household / Combined view** — invite a partner to link households and see combined net worth, cash flow, and spending, without merging or exposing either person's individual transactions (see [Combined / Household View](#combined--household-view) below)
 - **Private per-user data** — each household's data is isolated via Postgres Row Level Security; a linked household only ever sees pre-aggregated summaries, never raw transactions
-- **Email/password + mandatory MFA** — every account enrolls a TOTP authenticator app right after signup; self-serve password reset and account deletion
+- **Email/password + mandatory MFA** — every account enrolls a TOTP authenticator app right after signup, and the database itself refuses data to any session that hasn't passed MFA; self-serve password reset, "log out everywhere", and account deletion
+- **Audit log** — changes to accounts, balances, snapshots, goals, household links, and transaction edits/deletes are recorded (who, what, when) in `audit_log`
 - **Interactive product tour, light/dark theme** — a guided first-run walkthrough and a theme toggle that follows system preference by default
 
 ## Stack
@@ -24,7 +25,7 @@ Next.js (App Router, TypeScript) · Tailwind + shadcn/ui · Recharts · Supabase
 ## Setup
 
 1. Create a Supabase project.
-2. Apply every file in [supabase/migrations/](supabase/migrations/) in order (they're numbered — `0001_init.sql`, `0002_seed_trigger.sql`, … through the latest) via the Supabase SQL Editor or CLI. Schema changes always land as a new numbered migration rather than editing an old one.
+2. Apply every file in [supabase/migrations/](supabase/migrations/) in order (they're numbered — `0001_init.sql`, `0002_seed_trigger.sql`, … through the latest) via the Supabase SQL Editor or CLI. Schema changes always land as a new numbered migration rather than editing an old one. The SQL Editor will warn about "destructive operations" on migrations that drop or replace policies — that's expected.
 3. Copy `.env.local.example` to `.env.local` and fill in your project's URL and anon key (Supabase dashboard → Project Settings → API).
 4. Install dependencies and run the dev server:
    ```bash
@@ -36,11 +37,28 @@ The app runs locally at `http://localhost:3000`.
 
 ## Deploying
 
-Connect the repo to Vercel and set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as project environment variables. No other configuration is required — there's no service-role key or server secret to manage.
+Connect the repo to Vercel and set the app's environment variables. There's no service-role key or server secret in the app.
+
+| Variable | Where | Public? | Purpose |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Vercel + `.env.local` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel + `.env.local` | Yes (RLS protects data) | Supabase anon key |
+| `DATABASE_URL` | GitHub Actions secret | **No** | Session pooler URI used by the nightly backup |
+| `BACKUP_AGE_RECIPIENT` | GitHub Actions secret | Yes (public key) | Encrypts nightly backups |
+
+Every push to `main` deploys to production; every pull request gets a Vercel preview and runs CI (see [Testing](#testing)).
 
 ## Data
 
-All data lives in your Supabase project's Postgres database, scoped per-user via Row Level Security. Nothing is stored locally.
+All data lives in your Supabase project's Postgres database, scoped per-household via Row Level Security. Uploaded CSVs are parsed in memory and never stored. Financial columns aren't separately encrypted beyond Supabase's at-rest encryption — see [docs/decisions/0001-column-encryption.md](docs/decisions/0001-column-encryption.md) for why.
+
+### Backups
+
+The Supabase Free plan keeps no restorable backups, so the repo makes its own:
+
+- **Nightly:** [.github/workflows/backup.yml](.github/workflows/backup.yml) runs [scripts/backup-db.sh](scripts/backup-db.sh) (`pg_dump` of `public`, `private`, `auth`), encrypts it with [age](https://age-encryption.org) to `BACKUP_AGE_RECIPIENT`, and keeps it as a workflow artifact for 14 days. A failed run emails you. Run it on demand from **Actions → Nightly DB backup → Run workflow**.
+- **On demand, locally:** `scripts/backup-db.sh` (prompts for the Session pooler URI; writes to `~/Documents/candid-backups/`).
+- **Restore:** download the artifact, `age -d -i <private key> file.dump.age > file.dump`, then `pg_restore`. Keep the age private key outside GitHub — without it the backups can't be decrypted.
 
 ## Importing Transactions
 
@@ -80,11 +98,16 @@ just erroring out:
    `confirmCustomFormatAndImport()`
    ([lib/actions/custom-bank-formats.ts](lib/actions/custom-bank-formats.ts)),
    which imports the transactions *and* saves the mapping to
-   `public.custom_bank_formats` — a table shared across every user (by
-   design: a column-mapping carries no financial data), so the format is a
-   normal dropdown entry for anyone from then on, not just whoever confirmed
-   it. A `low`-confidence or missing-required-fields detection blocks
-   confirmation entirely rather than guessing.
+   `public.custom_bank_formats`. The format is usable right away by whoever
+   created it, but stays **pending** — invisible to everyone else — until
+   it's approved by hand (SQL at the top of
+   [0025_custom_format_review.sql](supabase/migrations/0025_custom_format_review.sql)).
+   Approved formats are shared with every user (a column mapping carries no
+   financial data). Names are unique ignoring case and punctuation,
+   built-in format names are reserved, and mappings whose debit/credit
+   headers look swapped are flagged for the reviewer. A `low`-confidence or
+   missing-required-fields detection blocks confirmation entirely rather
+   than guessing.
 5. **Tier 4 — fully manual.** Still not built: if Tier 2's detection can't
    confidently map a genuinely unrecognized layout, there's no UI yet to
    hand-assign columns yourself.
@@ -138,7 +161,12 @@ Go to **Data Entry** → **Month-End Balances**, pick the date (e.g. end of a pa
 ## Testing
 
 ```bash
-npm test    # CSV parsing unit tests
+npm test               # unit tests (CSV parsing, header matching, upload limits, …)
 npm run lint
+npx next typegen && npx tsc --noEmit
 npm run build
 ```
+
+**CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs all of the above on every pull request and push to `main`, plus a `migrations` job that applies every migration to a fresh local Supabase database and runs the SQL behavior tests in [supabase/tests/](supabase/tests/) (two fake users; checks RLS, the custom-format review rules, and the audit log, then rolls back). Dependabot opens weekly dependency PRs.
+
+To run the database tests locally (needs Docker): `npx supabase db start`, then `psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f supabase/tests/review_and_audit.sql`.

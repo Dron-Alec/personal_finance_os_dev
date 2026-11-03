@@ -80,15 +80,47 @@ fully migrated the same way; only ad hoc pieces have been moved over so far.
   ca-central-1) — separate from the old Streamlit-era `AlecHaleyFinances` /
   `lfqezqcymxcdseqcsbfh` project, which is no longer used.
 - Schema lives in `supabase/migrations/`, all applied in order to the live
-  project (currently `0001` through `0022` — always check the directory for
+  project (currently `0001` through `0026` — always check the directory for
   the actual latest, this note goes stale fast). New schema changes always
   land as a new numbered migration, never an edit to an old one.
+- **Applying a migration to live:** the Supabase MCP connector auto-declines
+  anything it deems destructive (`drop policy`, `revoke`, `delete`) because
+  its confirmation prompt can't be shown in this session — don't split the
+  SQL or route it through `execute_sql` to get around that. Instead: push
+  first so CI proves it applies to a fresh DB, have Alec paste the file into
+  the Dashboard SQL Editor, then verify via `execute_sql` and record it with
+  `insert into supabase_migrations.schema_migrations (version, name)`. Never
+  use `supabase db push` — live history uses timestamp versions that don't
+  match the local `00NN_` filenames, so it would re-run old migrations.
 - Tables: `accounts`, `account_balance_history`, `account_templates`,
   `transactions`, `nw_snapshots`, `category_rules`, `goals`, `households`,
   `household_members`, `household_invites`, `household_links`,
-  `user_settings`, `custom_bank_formats` — RLS enabled + forced on every
-  table. `accounts` and `transactions` are scoped by `household_id`
+  `user_settings`, `custom_bank_formats`, `audit_log` — RLS enabled + forced
+  on every table. `accounts` and `transactions` are scoped by `household_id`
   (migrated off `user_id` in `0009`–`0013`); everything else by `user_id`.
+- **MFA is enforced in the database, not just `proxy.ts`** (`0024`): every
+  table has a restrictive `require aal2` policy, and the household helpers /
+  SECURITY DEFINER RPCs check `aal` too. Any new table needs the same policy.
+  `household_links` is revoke-only for clients (links are created only by
+  `accept_household_invite`). Rows referencing an `account_id` must point at
+  an account the caller can see (restrictive `own account only` policies).
+- **`custom_bank_formats` review** (`0025`): new formats are forced to
+  `pending` by a trigger and visible only to their creator until approved by
+  hand in the SQL editor (queries at the top of `0025`). Names are unique
+  ignoring case/punctuation and built-in names are reserved — that SQL list
+  must match `BANK_FORMATS` (enforced by
+  `lib/__tests__/custom-format-review.test.ts`). Swapped-looking
+  debit/credit mappings get `review_flags`.
+- **`audit_log`** (`0026`): written only by the `private.audit_row()`
+  trigger (accounts, balances, snapshots, goals, household tables, custom
+  formats, transaction updates/deletes — not transaction inserts). Updates
+  store only changed columns. `delete_own_account()` sets
+  `candid.skip_audit` and purges the user's history; keep that if the RPC
+  is ever rewritten. Open question: it still deletes the whole household
+  even if a second member exists.
+- Database behavior tests live in `supabase/tests/*.sql` (plain psql, two
+  fake users, rolled back) and run in CI after all migrations apply to a
+  fresh local database.
 - `accounts` has a unique constraint on `(household_id, name)`; account
   `type` is set at creation only — the app never updates it once created.
   `transactions` has a unique constraint on
@@ -107,6 +139,39 @@ fully migrated the same way; only ad hoc pieces have been moved over so far.
   `.env.local.example`) — already set in `.env.local` for the live project.
 
 ## Statement formats supported
-Citi Checking, Citi Credit, Discover, Axos Checking, Axos Savings,
-Wells Fargo Checking, Wells Fargo Credit, Chase Checking, Chase Credit,
-Bank of America Checking, Bank of America Credit
+The source of truth is `BANK_FORMATS` in `lib/constants.ts` (20 built-ins:
+Ally, Amex, Apple Card, Axos ×2, BofA ×2, Capital One ×2, Chase ×2, Citi ×2,
+Discover, PayPal, PNC, US Bank, Venmo, Wells Fargo ×2) plus approved rows in
+`custom_bank_formats`. Adding a built-in also means reserving its name in a
+new migration (see the review note above). CSV uploads are capped in
+`readCsvFiles()` / `csvFilesError()` (`lib/csv-parsing.ts`): `.csv` only,
+≤ 12 files, ≤ 900 KB total (Next's server-action body limit is 1 MB),
+≤ 20k rows — always read uploads through those, never `file.text()`.
+
+## Security, CI, and ops
+- Headers (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy,
+  Permissions-Policy) are set in `next.config.ts`; a new third-party script
+  or API (Sentry, Plaid Link) needs a CSP entry there.
+- Post-auth redirects go through `safeRedirect()` (`lib/utils.ts`).
+- Settings has "Log out everywhere" (`signOutEverywhere`, global scope); a
+  password reset signs out other sessions.
+- Decisions are recorded in `docs/decisions/` — `0001`: no column-level
+  encryption for financial data; Supabase Vault only for secrets (Plaid
+  tokens).
+- CI (`.github/workflows/ci.yml`): lint → `next typegen` (needed for the
+  `LayoutProps`/`PageProps` globals on a fresh checkout) → `tsc` → tests →
+  build, plus a `migrations` job (all migrations on a fresh DB +
+  `supabase/tests`). Dependabot runs weekly; `@types/node` majors are
+  ignored so the types track the Node 22 runtime. TypeScript 7 is on hold
+  until typescript-eslint supports it.
+- `npm audit` has no high findings; `overrides` pins `systeminformation`
+  (pulled in via the shadcn CLI). Local npm 10.9.0 crashes on some installs
+  (`edgesOut`) — use `npx npm@11 install` if it does.
+- **Backups (Free plan = no Supabase backups):**
+  `.github/workflows/backup.yml` runs `scripts/backup-db.sh` nightly,
+  age-encrypts the dump to the `BACKUP_AGE_RECIPIENT` public key, and keeps
+  14 days of artifacts. Secrets `DATABASE_URL` + `BACKUP_AGE_RECIPIENT` live
+  on the `personal_finance_os_dev` repo (not the older `personal-finance-os`
+  repo). The private key is Alec's, kept outside GitHub. A restore has not
+  been tested yet.
+- Production plan + status: `docs/production-plan.md`.
