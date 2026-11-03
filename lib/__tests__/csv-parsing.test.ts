@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanVal, findCol, findHeaderRow, parseCsvForBank } from "@/lib/csv-parsing";
+import { cleanVal, csvFilesError, findCol, findHeaderRow, parseCsvForBank, readCsvFiles } from "@/lib/csv-parsing";
 
 describe("cleanVal", () => {
   it("strips $ and , and parses floats", () => {
@@ -160,5 +160,25 @@ describe("parseCsvForBank", () => {
   it("returns [] when date/description columns can't be found", () => {
     const csv = "Foo,Bar,Baz\n1,2,3";
     expect(parseCsvForBank("Chase Checking", csv)).toEqual([]);
+  });
+});
+
+describe("upload validation", () => {
+  const csv = (body: string, name = "s.csv", type = "text/csv") => new File([body], name, { type });
+
+  it("accepts CSVs, including Excel's MIME type and a blank one", () => {
+    expect(csvFilesError([csv("a"), csv("a", "x.CSV", "application/vnd.ms-excel"), csv("a", "y.csv", "")])).toBeNull();
+  });
+  it("rejects non-CSV names and types before reading", () => {
+    expect(csvFilesError([csv("a", "s.pdf")])).toMatch(/isn't a CSV/);
+    expect(csvFilesError([csv("a", "s.csv", "application/pdf")])).toMatch(/isn't a CSV/);
+  });
+  it("rejects too many files and too many bytes", () => {
+    expect(csvFilesError(Array.from({ length: 13 }, () => csv("a")))).toMatch(/at most/);
+    expect(csvFilesError([csv("x".repeat(901 * 1024))])).toMatch(/too large/);
+  });
+  it("rejects too many rows after reading", async () => {
+    expect(await readCsvFiles([csv("a\n".repeat(20_000))])).toEqual({ error: expect.stringMatching(/rows/) });
+    expect(await readCsvFiles([csv("a,b\n1,2")])).toEqual({ texts: ["a,b\n1,2"] });
   });
 });

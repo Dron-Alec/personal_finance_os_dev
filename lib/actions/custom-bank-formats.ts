@@ -5,7 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentHouseholdId } from "@/lib/households";
 import { DEFAULT_CATEGORY_RULES, type CategoryRule } from "@/lib/constants";
-import { extractHeaderSample } from "@/lib/csv-parsing";
+import { extractHeaderSample, readCsvFiles } from "@/lib/csv-parsing";
 import { categorizeTransaction } from "@/lib/categorize";
 import { applyMapping } from "@/lib/import/apply-mapping";
 import type { ColumnMapping } from "@/lib/import/csv-header-matcher";
@@ -66,13 +66,14 @@ export async function confirmCustomFormatAndImport(
 
   const files = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
   if (files.length === 0) return { error: "Choose at least one CSV file." };
+  const read = await readCsvFiles(files);
+  if ("error" in read) return read;
 
   const { data: ruleRow } = await supabase.from("category_rules").select("rules").single();
   const rules: CategoryRule[] = ruleRow?.rules ?? DEFAULT_CATEGORY_RULES;
 
   const rows: { household_id: string; date: string; description: string; amount: number; bank: string; category: string }[] = [];
-  for (const file of files) {
-    const text = await file.text();
+  for (const text of read.texts) {
     const parsed = applyMapping(mapping, extractHeaderSample(text).rows);
     for (const tx of parsed) {
       rows.push({

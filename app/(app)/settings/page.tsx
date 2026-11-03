@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentHouseholdId } from "@/lib/households";
 import { DEFAULT_CATEGORY_RULES } from "@/lib/constants";
 import { clearTransactions, resetAllData } from "@/lib/actions/settings";
+import { signOutEverywhere } from "@/lib/actions/auth";
+import { Button } from "@/components/ui/button";
 import { CategoryRulesForm } from "@/components/settings/category-rules-form";
 import { HouseholdSection } from "@/components/settings/household-section";
 import { ConfirmActionButton } from "@/components/confirm-action-button";
@@ -65,6 +67,22 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <HouseholdSection pendingInvites={pendingInvites} activeLinks={activeLinks} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Sessions</CardTitle>
+          <CardDescription>
+            Signs you out on every device and browser, including this one.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={signOutEverywhere}>
+            <Button type="submit" variant="outline">
+              Log out everywhere
+            </Button>
+          </form>
         </CardContent>
       </Card>
 

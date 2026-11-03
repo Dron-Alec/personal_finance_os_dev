@@ -3,6 +3,40 @@ import { format } from "date-fns";
 import type { BankFormat } from "@/lib/constants";
 import { parseLocalDate } from "@/lib/date-utils";
 
+// Next caps a server action request at 1MB (serverActions.bodySizeLimit), so
+// stay under it with room for the other form fields — past it the user gets
+// an opaque framework error instead of ours. A year of statements is ~100KB.
+const MAX_CSV_TOTAL_BYTES = 900 * 1024;
+const MAX_CSV_FILES = 12;
+const MAX_CSV_ROWS = 20_000;
+// Browsers/OSes report CSVs inconsistently (Excel on Windows says vnd.ms-excel; some say nothing).
+const CSV_MIME_TYPES = ["text/csv", "application/vnd.ms-excel", "text/plain", ""];
+
+/** Checks metadata only, so it's safe to run before reading any bytes. */
+export function csvFilesError(files: File[]): string | null {
+  if (files.length > MAX_CSV_FILES) return `Upload at most ${MAX_CSV_FILES} files at a time.`;
+  for (const file of files) {
+    if (!file.name.toLowerCase().endsWith(".csv") || !CSV_MIME_TYPES.includes(file.type)) {
+      return `"${file.name}" isn't a CSV file.`;
+    }
+  }
+  if (files.reduce((sum, f) => sum + f.size, 0) > MAX_CSV_TOTAL_BYTES) {
+    return "Files are too large (900 KB max per upload) — try fewer at a time.";
+  }
+  return null;
+}
+
+/** Validates, then reads. Call this instead of file.text() on anything user-uploaded. */
+export async function readCsvFiles(files: File[]): Promise<{ texts: string[] } | { error: string }> {
+  const error = csvFilesError(files);
+  if (error) return { error };
+  const texts = await Promise.all(files.map((f) => f.text()));
+  if (texts.some((t) => t.split("\n").length > MAX_CSV_ROWS)) {
+    return { error: `Files are limited to ${MAX_CSV_ROWS.toLocaleString()} rows.` };
+  }
+  return { texts };
+}
+
 export type ParsedTransaction = {
   date: string; // ISO yyyy-MM-dd
   description: string;

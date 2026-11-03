@@ -84,6 +84,8 @@ export default function ResetPasswordPage() {
       setError(error.message);
       return;
     }
+    // Whoever triggered a reset may not be the only one holding a session.
+    await supabase.auth.signOut({ scope: "others" });
     setDone(true);
     router.push("/");
     router.refresh();

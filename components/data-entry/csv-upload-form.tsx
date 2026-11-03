@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { importCsv } from "@/lib/actions/transactions";
 import { confirmCustomFormatAndImport } from "@/lib/actions/custom-bank-formats";
-import { extractHeaderSample } from "@/lib/csv-parsing";
+import { csvFilesError, extractHeaderSample } from "@/lib/csv-parsing";
 import { matchHeaders, type ColumnMapping } from "@/lib/import/csv-header-matcher";
 import { applyMapping, type MappedTransaction } from "@/lib/import/apply-mapping";
 import { BANK_FORMATS } from "@/lib/constants";
@@ -43,6 +43,11 @@ export function CsvUploadForm({
       toast.error("Choose at least one CSV file first.");
       return;
     }
+    const fileError = csvFilesError(Array.from(files));
+    if (fileError) {
+      toast.error(fileError);
+      return;
+    }
     const text = await files[0].text();
     const { columns, rows, sampleValuesByColumn } = extractHeaderSample(text);
     if (columns.length === 0) {
@@ -66,6 +71,11 @@ export function CsvUploadForm({
     const files = fileInputRef.current?.files;
     if (!files || files.length === 0) {
       toast.error("Choose at least one CSV file.");
+      return;
+    }
+    const fileError = csvFilesError(Array.from(files));
+    if (fileError) {
+      toast.error(fileError);
       return;
     }
     const formData = new FormData();
@@ -95,6 +105,11 @@ export function CsvUploadForm({
     const files = fileInputRef.current?.files;
     if (!files || files.length === 0) {
       toast.error("Choose at least one CSV file.");
+      return;
+    }
+    const fileError = csvFilesError(Array.from(files));
+    if (fileError) {
+      toast.error(fileError);
       return;
     }
     const formData = new FormData();

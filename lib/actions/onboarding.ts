@@ -4,10 +4,11 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ACCOUNT_TYPES } from "@/lib/constants";
+import { safeRedirect } from "@/lib/utils";
 
 function target(formData: FormData): string {
   const redirectTo = formData.get("redirectTo");
-  return typeof redirectTo === "string" && redirectTo ? redirectTo : "/data-entry";
+  return (typeof redirectTo === "string" && safeRedirect(redirectTo)) || "/data-entry";
 }
 
 async function markOnboarded(userId: string, supabase: Awaited<ReturnType<typeof createClient>>) {

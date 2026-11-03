@@ -5,7 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentHouseholdId } from "@/lib/households";
 import { BANK_FORMATS, DEFAULT_CATEGORY_RULES, type BankFormat, type CategoryRule } from "@/lib/constants";
-import { extractHeaderSample, parseCsvForBank } from "@/lib/csv-parsing";
+import { extractHeaderSample, parseCsvForBank, readCsvFiles } from "@/lib/csv-parsing";
 import { categorizeTransaction } from "@/lib/categorize";
 import { matchHeaders, type ColumnMapping } from "@/lib/import/csv-header-matcher";
 import { applyMapping } from "@/lib/import/apply-mapping";
@@ -69,6 +69,8 @@ export async function importCsv(
 
   const files = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
   if (files.length === 0) return { error: "Choose at least one CSV file." };
+  const read = await readCsvFiles(files);
+  if ("error" in read) return read;
 
   const { data: ruleRow } = await supabase.from("category_rules").select("rules").single();
   const rules: CategoryRule[] = ruleRow?.rules ?? DEFAULT_CATEGORY_RULES;
@@ -87,8 +89,7 @@ export async function importCsv(
   }
 
   const rows: { household_id: string; date: string; description: string; amount: number; bank: string; category: string }[] = [];
-  for (const file of files) {
-    const text = await file.text();
+  for (const text of read.texts) {
     const parsed = customMapping
       ? applyMapping(customMapping, extractHeaderSample(text).rows)
       : parseCsvForBank(bankFormat as BankFormat, text);
@@ -111,7 +112,7 @@ export async function importCsv(
     // never to auto-import. A medium/high-confidence guess is not enough
     // on its own to commit data without the user confirming it.
     let suggestion = "";
-    const { columns, sampleValuesByColumn } = extractHeaderSample(await files[0].text());
+    const { columns, sampleValuesByColumn } = extractHeaderSample(read.texts[0]);
     if (columns.length > 0) {
       const mapping = matchHeaders({ headers: columns, sampleValuesByColumn });
       if (mapping.confidence === "high" || mapping.confidence === "medium") {
