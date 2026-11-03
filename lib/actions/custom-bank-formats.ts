@@ -106,10 +106,20 @@ export async function confirmCustomFormatAndImport(
     number_format: mapping.numberFormat,
     created_by: user.id,
   });
-  // A unique-name collision just means someone already contributed this
-  // exact name — proceed with the import either way, the format itself
-  // doesn't need re-saving.
-  if (formatError && formatError.code !== "23505") return { error: formatError.message };
+  // Names are unique ignoring case/punctuation, and someone else's format
+  // may still be pending review (invisible to you) — so a collision can't
+  // fall through to importing under a name this user can't look up later.
+  if (formatError?.code === "23505") {
+    return { error: `A format named "${name}" already exists — pick a different name.` };
+  }
+  if (formatError?.code === "23514") {
+    return {
+      error: formatError.message.includes("not_builtin")
+        ? `"${name}" is a built-in format — pick it from the Statement Format list instead.`
+        : "Format names must be 2–60 characters.",
+    };
+  }
+  if (formatError) return { error: formatError.message };
 
   const { data: inserted, error } = await supabase
     .from("transactions")

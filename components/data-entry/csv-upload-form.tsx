@@ -121,7 +121,7 @@ export function CsvUploadForm({
       const result = await confirmCustomFormatAndImport({}, formData);
       if ("imported" in result && result.imported !== undefined) {
         toast.success(
-          `Saved "${name}" and imported ${result.imported} transaction${result.imported === 1 ? "" : "s"} (${result.duplicates} duplicate${result.duplicates === 1 ? "" : "s"} skipped).`,
+          `Saved "${name}" and imported ${result.imported} transaction${result.imported === 1 ? "" : "s"} (${result.duplicates} duplicate${result.duplicates === 1 ? "" : "s"} skipped). Only you can use it until it's reviewed.`,
         );
         if (fileInputRef.current) fileInputRef.current.value = "";
         setNewFormatName("");

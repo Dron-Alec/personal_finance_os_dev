@@ -35,3 +35,6 @@ jobs:
           version: latest
       - run: supabase init --force
       - run: supabase db start
+      - name: Database behavior tests
+        # Each file runs in a transaction and rolls back; fails on the first broken check.
+        run: for f in supabase/tests/*.sql; do psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -q -f "$f"; done
