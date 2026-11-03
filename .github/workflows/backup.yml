@@ -42,7 +42,7 @@ jobs:
 
       # ponytail: artifacts expire after 14 days and live only in GitHub. Add
       # an off-GitHub copy (S3/R2 with object lock) once there are paying users.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.encrypt.outputs.name }}
           path: ${{ steps.dump.outputs.file }}.age
