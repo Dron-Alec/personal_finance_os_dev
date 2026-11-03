@@ -1,0 +1,50 @@
+name: Nightly DB backup
+
+# Free plan has no Supabase backups — this is the only copy. Dumps are
+# age-encrypted to BACKUP_AGE_RECIPIENT (a public key); the private key
+# never touches GitHub. GitHub emails you if a scheduled run fails.
+on:
+  schedule:
+    - cron: "17 8 * * *" # ~3–4am Eastern
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pg_dump 17 and age
+        run: |
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-client-17 age
+
+      - name: Dump
+        id: dump
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          export PATH="/usr/lib/postgresql/17/bin:$PATH"
+          scripts/backup-db.sh "$RUNNER_TEMP/backup"
+
+      - name: Encrypt
+        id: encrypt
+        env:
+          RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
+        run: |
+          age --recipient "$RECIPIENT" --output "${{ steps.dump.outputs.file }}.age" "${{ steps.dump.outputs.file }}"
+          rm "${{ steps.dump.outputs.file }}"
+          echo "name=$(basename "${{ steps.dump.outputs.file }}")" >> "$GITHUB_OUTPUT"
+
+      # ponytail: artifacts expire after 14 days and live only in GitHub. Add
+      # an off-GitHub copy (S3/R2 with object lock) once there are paying users.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.encrypt.outputs.name }}
+          path: ${{ steps.dump.outputs.file }}.age
+          retention-days: 14
+          if-no-files-found: error
