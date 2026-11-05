@@ -25,7 +25,7 @@ Status as of 2026-11-03. `[x]` done, `[~]` partly done, `[ ]` not started.
 ## Phase 3 — Testing and CI
 - [x] GitHub Actions: lint, typecheck, tests, build on every PR
 - [ ] Regression fixtures for every bank adapter (incl. Citi Credit payments, `2e047c1`)
-- [~] Database tests — `supabase/tests/` covers 0025/0026 with two users; full cross-household read matrix still to do
+- [x] Database tests — `supabase/tests/`: cross-household privacy matrix (linked / unlinked / no-MFA / anon), custom-format review, audit log, account deletion
 - [x] Account deletion test — `supabase/tests/account_deletion.sql`: linked pair, deleter's data gone from every table, link dissolves, survivor intact
 - [ ] End-to-end tests (signup, email verification, MFA, CSV import, net worth)
 - [x] All migrations apply cleanly to a fresh database (CI `migrations` job)

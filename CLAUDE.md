@@ -123,6 +123,14 @@ fully migrated the same way; only ad hoc pieces have been moved over so far.
   joins households, never adds members — keep it that way or revisit this.
   `supabase/tests/account_deletion.sql` sweeps every public table for
   leftovers.
+- **Don't accept the advisor's "Security Definer View" fix** for
+  `household_spending_summary`, `household_income_summary`,
+  `household_account_balances`, `household_account_balance_history`. They
+  must run as owner — access is enforced in their WHERE clause — and with
+  `security_invoker=on` the Combined tab silently loses the partner's data.
+  That happened on live once (fixed in `0027`); `supabase/tests/cross_household.sql`
+  fails if a migration ever does it. The `rls_auto_enable()` function is
+  Supabase's own "auto-enable RLS" event trigger, not ours.
 - Database behavior tests live in `supabase/tests/*.sql` (plain psql, two
   fake users, rolled back) and run in CI after all migrations apply to a
   fresh local database.
