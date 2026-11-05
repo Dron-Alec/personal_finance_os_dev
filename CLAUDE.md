@@ -116,8 +116,13 @@ fully migrated the same way; only ad hoc pieces have been moved over so far.
   formats, transaction updates/deletes — not transaction inserts). Updates
   store only changed columns. `delete_own_account()` sets
   `candid.skip_audit` and purges the user's history; keep that if the RPC
-  is ever rewritten. Open question: it still deletes the whole household
-  even if a second member exists.
+  is ever rewritten. Deleting an account removes that user's own household
+  and all its data; a household link cascades away, so the other person is
+  back to solo (Combined tab gone, Settings offers "invite" again) with
+  their data untouched. Households only ever have one member — linking
+  joins households, never adds members — keep it that way or revisit this.
+  `supabase/tests/account_deletion.sql` sweeps every public table for
+  leftovers.
 - Database behavior tests live in `supabase/tests/*.sql` (plain psql, two
   fake users, rolled back) and run in CI after all migrations apply to a
   fresh local database.

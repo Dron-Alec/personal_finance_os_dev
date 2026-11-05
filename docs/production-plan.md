@@ -26,7 +26,7 @@ Status as of 2026-11-03. `[x]` done, `[~]` partly done, `[ ]` not started.
 - [x] GitHub Actions: lint, typecheck, tests, build on every PR
 - [ ] Regression fixtures for every bank adapter (incl. Citi Credit payments, `2e047c1`)
 - [~] Database tests — `supabase/tests/` covers 0025/0026 with two users; full cross-household read matrix still to do
-- [~] Account deletion test — covered for audit/accounts/transactions; needs every-table sweep. **Decide:** what happens to a household with a second member?
+- [x] Account deletion test — `supabase/tests/account_deletion.sql`: linked pair, deleter's data gone from every table, link dissolves, survivor intact
 - [ ] End-to-end tests (signup, email verification, MFA, CSV import, net worth)
 - [x] All migrations apply cleanly to a fresh database (CI `migrations` job)
 
