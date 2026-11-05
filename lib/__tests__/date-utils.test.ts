@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareDateStrings, lastDayOfPreviousMonth, toDateInputValue } from "@/lib/date-utils";
+import { compareDateStrings, lastDayOfPreviousMonth, plaidImportFromDefault, toDateInputValue } from "@/lib/date-utils";
 
 describe("lastDayOfPreviousMonth", () => {
   it("on a month's own last day, returns that day (not the prior month)", () => {
@@ -18,5 +18,15 @@ describe("compareDateStrings", () => {
     expect(compareDateStrings("2026-08-31", "2026-09-30")).toBeLessThan(0);
     expect(compareDateStrings("2026-09-30", "2026-08-31")).toBeGreaterThan(0);
     expect(compareDateStrings("2026-08-31", "2026-08-31")).toBe(0);
+  });
+});
+
+describe("plaidImportFromDefault", () => {
+  it("starts the day after the newest transaction, across month/year ends", () => {
+    expect(plaidImportFromDefault("2026-10-31")).toBe("2026-11-01");
+    expect(plaidImportFromDefault("2026-12-31")).toBe("2027-01-01");
+  });
+  it("falls back to 3 months back with no transactions", () => {
+    expect(plaidImportFromDefault(null, new Date(2026, 10, 5))).toBe("2026-08-05");
   });
 });

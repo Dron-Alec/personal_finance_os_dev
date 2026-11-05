@@ -1,5 +1,6 @@
 // Generated via `mcp__plugin_supabase_supabase__generate_typescript_types`
-// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0022.
+// against the live schema (ycvxvdtigwkjpwgoiqhz) after migrations 0001-0022;
+// Plaid columns/table (0028) added by hand from a regeneration on 2026-11-05.
 // Regenerate the same way after any schema change rather than hand-editing.
 //
 // NOTE: regeneration always resets category_rules.rules to a generic Json
@@ -111,6 +112,8 @@ export type Database = {
           household_id: string
           id: number
           is_liability: boolean
+          plaid_account_id: string | null
+          plaid_item_id: string | null
           name: string
           type: string
           updated_at: string
@@ -123,6 +126,8 @@ export type Database = {
           household_id: string
           id?: never
           is_liability?: boolean
+          plaid_account_id?: string | null
+          plaid_item_id?: string | null
           name: string
           type: string
           updated_at?: string
@@ -135,6 +140,8 @@ export type Database = {
           household_id?: string
           id?: never
           is_liability?: boolean
+          plaid_account_id?: string | null
+          plaid_item_id?: string | null
           name?: string
           type?: string
           updated_at?: string
@@ -432,6 +439,23 @@ export type Database = {
         }
         Relationships: []
       }
+      plaid_items: {
+        // Column-level grants: clients may select only these. access_token_secret_id
+        // and cursor exist but are readable by service_role (the Edge Function) only.
+        Row: {
+          created_at: string
+          error_code: string | null
+          household_id: string
+          id: string
+          import_from: string
+          institution_name: string | null
+          last_synced_at: string | null
+          status: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
@@ -442,6 +466,8 @@ export type Database = {
           description: string
           household_id: string
           id: number
+          plaid_transaction_id: string | null
+          source: string
         }
         Insert: {
           amount: number
@@ -452,6 +478,8 @@ export type Database = {
           description: string
           household_id: string
           id?: never
+          plaid_transaction_id?: string | null
+          source?: string
         }
         Update: {
           amount?: number
@@ -462,6 +490,8 @@ export type Database = {
           description?: string
           household_id?: string
           id?: never
+          plaid_transaction_id?: string | null
+          source?: string
         }
         Relationships: [
           {

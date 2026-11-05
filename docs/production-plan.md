@@ -52,4 +52,17 @@ Status as of 2026-11-03. `[x]` done, `[~]` partly done, `[ ]` not started.
 - [ ] Stripe — only if the paid tier is happening
 
 ## Phase 7 — Plaid
-- [ ] Not started. Decisions already made: access tokens in Vault (`docs/decisions/0001`); each account is fed by either CSV or Plaid, not both.
+- [x] Sandbox credentials (Supabase Edge Function secrets)
+- [x] Link token created server-side (Edge Function), never in the client
+- [x] Public token exchanged server-side; access token encrypted in Vault
+- [x] Item linked to the household (`plaid_items`)
+- [x] `/transactions/sync` with a stored cursor
+- [x] Webhook endpoint verifies Plaid's ES256 signature + body hash before acting
+- [x] `ITEM_LOGIN_REQUIRED` / pending-expiration → "Reconnect" (Link update mode)
+- [x] Plaid accounts mapped onto existing or new Candid accounts; credit/loan stored negative
+- [x] CSV/Plaid coexistence: per-connection import-from date (default: day after newest transaction) + dedupe key that keeps identical Plaid transactions
+- [x] Plaid categories → Candid categories (user rules win)
+- [~] Sandbox tests: unit + DB tests done; click-through with `user_good` and re-auth case pending
+- [x] Item revoked at Plaid on disconnect and before account deletion
+- [x] Consent screen
+- [ ] Production access + Plaid security review

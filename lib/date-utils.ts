@@ -1,4 +1,4 @@
-import { lastDayOfMonth, subMonths } from "date-fns";
+import { addDays, lastDayOfMonth, subMonths } from "date-fns";
 
 /** Ascending comparator for YYYY-MM-DD strings — `a < b ? -1 : 1` (seen
  * copy-pasted across this codebase) returns 1 for equal dates instead of 0,
@@ -44,4 +44,13 @@ export function parseLocalDate(raw: string): Date {
     return new Date(Number(y), Number(m) - 1, Number(d));
   }
   return new Date(raw);
+}
+
+/**
+ * Where Plaid starts importing: the day after the newest transaction already
+ * here (so CSV-imported history isn't counted twice), or 3 months back for a
+ * household with none.
+ */
+export function plaidImportFromDefault(newestTransactionDate: string | null, today: Date = new Date()): string {
+  return toDateInputValue(newestTransactionDate ? addDays(parseLocalDate(newestTransactionDate), 1) : subMonths(today, 3));
 }

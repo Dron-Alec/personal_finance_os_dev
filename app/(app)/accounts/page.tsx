@@ -1,26 +1,39 @@
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/format";
+import { plaidImportFromDefault } from "@/lib/date-utils";
 import { getAccountColor, getAccountTypeColor, CATEGORICAL_PALETTE } from "@/lib/chart-colors";
 import { projectGoalCurve, type Goal } from "@/lib/goals";
 import { AccountForm } from "@/components/accounts/account-form";
 import { AccountsTable } from "@/components/accounts/accounts-table";
+import { PlaidConnections } from "@/components/accounts/plaid-connections";
 import { BalanceHistorySection } from "@/components/accounts/balance-history-section";
 import { BreakdownPieChart } from "@/components/charts/breakdown-pie-chart";
 import { TotalsBarChart } from "@/components/charts/totals-bar-chart";
 import type { GoalLine, GoalSeries } from "@/components/charts/balance-history-chart";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+// Sandbox-only until Plaid production access: set in .env.local / Vercel Preview, not Production.
+const PLAID_ENABLED = process.env.NEXT_PUBLIC_PLAID_ENABLED === "true";
 
 export default async function AccountsPage() {
   const supabase = await createClient();
 
-  const [{ data: accounts }, { data: history }, { data: goals }] = await Promise.all([
-    supabase.from("accounts").select("id, name, type, balance, as_of_date, bank_format, is_liability").order("id"),
+  const [{ data: accounts }, { data: history }, { data: goals }, { data: plaidItems }, { data: newestTxn }] = await Promise.all([
+    supabase.from("accounts").select("id, name, type, balance, as_of_date, bank_format, is_liability, plaid_account_id").order("id"),
     supabase.from("account_balance_history").select("account_id, balance, as_of_date"),
     supabase
       .from("goals")
       .select("*")
       .eq("scope_type", "account"),
+    PLAID_ENABLED
+      ? supabase.from("plaid_items").select("id, institution_name, status, last_synced_at, import_from").order("created_at")
+      : Promise.resolve({ data: [] }),
+    PLAID_ENABLED
+      ? supabase.from("transactions").select("date").order("date", { ascending: false }).limit(1).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+
+  const defaultImportFrom = plaidImportFromDefault(newestTxn?.date ?? null);
 
   const accountList = accounts ?? [];
   const accountsById = new Map(accountList.map((a) => [a.id, a]));
@@ -84,6 +97,18 @@ export default async function AccountsPage() {
           <AccountForm accounts={accountList} />
         </CardContent>
       </Card>
+
+      {PLAID_ENABLED && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Connected banks</CardTitle>
+            <CardDescription>Sandbox — test banks only.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PlaidConnections items={plaidItems ?? []} accounts={accountList} defaultImportFrom={defaultImportFrom} />
+          </CardContent>
+        </Card>
+      )}
 
       {accountList.length === 0 ? (
         <p className="text-muted-foreground">

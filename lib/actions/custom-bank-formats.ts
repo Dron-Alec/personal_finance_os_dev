@@ -127,7 +127,7 @@ export async function confirmCustomFormatAndImport(
   const { data: inserted, error } = await supabase
     .from("transactions")
     .upsert(rows, {
-      onConflict: "household_id,date,description,amount",
+      onConflict: "household_id,date,description,amount,plaid_transaction_id",
       ignoreDuplicates: true,
     })
     .select("id");

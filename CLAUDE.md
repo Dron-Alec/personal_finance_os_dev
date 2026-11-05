@@ -196,4 +196,18 @@ new migration (see the review note above). CSV uploads are capped in
   `/monitoring` (Sentry tunnel) and `/api/health` are excluded from the
   `proxy.ts` matcher; any future public endpoint (e.g. a Plaid webhook)
   needs the same.
+- **Plaid (sandbox):** one Edge Function `supabase/functions/plaid/`
+  (deployed with `verify_jwt: false` — it checks the user JWT + aal2 itself,
+  and Plaid's ES256 signature on `/webhook`). Redeploy via the MCP
+  `deploy_edge_function` with `import_map_path: "deno.json"` (omitting it
+  fails on redeploy); typecheck with
+  `npx deno@2.5.6 check --config supabase/functions/plaid/deno.json supabase/functions/plaid/index.ts`.
+  `supabase/functions` is excluded from the Next tsconfig. Tokens live in
+  Vault via `plaid_store_item` / `plaid_access_token` (service_role only);
+  the `delete_plaid_secret` trigger removes the secret whenever a
+  `plaid_items` row goes. Pure mapping logic is in `mapping.ts`, unit-tested
+  from `lib/__tests__/plaid-mapping.test.ts`. UI is behind
+  `NEXT_PUBLIC_PLAID_ENABLED` (Preview/local only). Transactions dedupe on
+  `(household_id, date, description, amount, plaid_transaction_id)`
+  NULLS NOT DISTINCT — CSV upserts must name all five columns.
 - Production plan + status: `docs/production-plan.md`.

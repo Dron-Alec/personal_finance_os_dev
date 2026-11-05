@@ -46,6 +46,8 @@ Connect the repo to Vercel and set the app's environment variables. There's no s
 | `DATABASE_URL` | GitHub Actions secret | **No** | Session pooler URI used by the nightly backup |
 | `BACKUP_AGE_RECIPIENT` | GitHub Actions secret | Yes (public key) | Encrypts nightly backups |
 | `NEXT_PUBLIC_SENTRY_DSN` | Vercel | Yes | Turns on error reporting (unset = Sentry off) |
+| `NEXT_PUBLIC_PLAID_ENABLED` | `.env.local`, Vercel **Preview** only | Yes | `true` shows "Connected banks" on Accounts. Keep it off in Production until Plaid production access. |
+| `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV` | Supabase → Edge Functions → Secrets | **No** | Used only by the `plaid` Edge Function; never in Vercel or the browser |
 | `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | Vercel | **No** (token) | Optional: upload source maps so Sentry stack traces are readable |
 
 Every push to `main` deploys to production; every pull request gets a Vercel preview and runs CI (see [Testing](#testing)).
@@ -162,6 +164,16 @@ To see a shared picture with a partner:
 **Privacy boundary:** the combined views never read transaction-level data from a linked household. They query Postgres views — `household_spending_summary` and `household_income_summary` (`supabase/migrations/0015_household_summary_views.sql`, `0022_household_income_summary.sql`) — that pre-aggregate to category/month totals *inside* the view definition, are declared `security_barrier` (so Postgres can't push a caller predicate underneath the aggregation to leak row-level values), and gate access via `private.is_household_member()` / `private.is_linked_household()` in their `WHERE` clause. A linked partner can see "you spent $340 on Groceries in July," never the individual line items behind that number.
 
 All `lib/actions/household-summaries.ts` functions (`getCombinedNetWorth`, `getCombinedCashFlow`, `getCombinedSpendingSummary`) follow the same shape: fetch the caller's `household_id`, query the summary view (which self-filters to "my household OR actively linked households"), and group into `combined` + `perHousehold` results for the toggle.
+
+## Bank connections (Plaid, sandbox)
+
+Behind `NEXT_PUBLIC_PLAID_ENABLED`. All Plaid calls run in one Supabase Edge Function, [supabase/functions/plaid/](supabase/functions/plaid/) — the Next app holds no Plaid secret and no service-role key.
+
+- **Connect:** Accounts → Connected banks → *Connect a bank* shows a consent screen (what's pulled, how it's stored, how to stop) and an **Import transactions from** date, defaulting to the day after your newest transaction so CSV history isn't double-counted. Then Plaid Link, then *Choose accounts*: link each Plaid account to one you already track, add it as new, or skip it.
+- **Storage:** the access token is encrypted in Supabase Vault ([0028_plaid.sql](supabase/migrations/0028_plaid.sql)); `plaid_items` holds only the vault id, readable by the Edge Function alone. Disconnecting (or deleting your account) revokes the item at Plaid and deletes the secret.
+- **Sync:** `/transactions/sync` with a stored cursor — on connect, on *Sync now*, and when Plaid's webhook (`/functions/v1/plaid/webhook`, signature-verified) says there's new data. Pending transactions are skipped until they post. Your category rules win; otherwise Plaid's category is mapped onto Candid's ([mapping.ts](supabase/functions/plaid/mapping.ts)). Credit and loan balances are stored negative, like manual entries.
+- **Re-auth:** when Plaid reports `ITEM_LOGIN_REQUIRED` (or a pending expiration), the connection shows *Needs you to sign in again* with a **Reconnect** button (Plaid Link update mode).
+- **Sandbox test login:** `user_good` / `pass_good` at any test bank (e.g. First Platypus Bank). To test re-auth, call `/sandbox/item/reset_login` for the item.
 
 ## Backfilling Missing Months
 

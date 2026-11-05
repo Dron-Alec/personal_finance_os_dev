@@ -101,6 +101,11 @@ export async function deleteOwnAccount() {
   // row itself, which cascades everything else (category_rules,
   // nw_snapshots, account_templates, goals, user_settings, and Supabase's
   // own session/identity/MFA tables). Irreversible.
+  // Revoke Plaid access at Plaid first. If it fails we still delete: the
+  // plaid_items cascade deletes our copy of each token regardless.
+  const { error: plaidError } = await supabase.functions.invoke("plaid", { body: { action: "remove_all" } });
+  if (plaidError) log("error", "account.plaid_remove_failed", { user_id: user.id });
+
   const { error } = await supabase.rpc("delete_own_account");
   if (error) {
     log("error", "account.delete_failed", { code: error.code });

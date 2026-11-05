@@ -7,13 +7,15 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 // No-nonce CSP per node_modules/next/dist/docs/01-app/02-guides/content-security-policy.md.
 // connect-src adds Supabase: the browser client talks to it directly for auth/MFA.
 // Sentry needs no entry: events go through the same-origin /monitoring tunnel.
+// Plaid Link: its script and iframe come from cdn.plaid.com (Plaid's documented CSP).
 const csp = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
+  script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://cdn.plaid.com;
   style-src 'self' 'unsafe-inline';
   img-src 'self' blob: data:;
   font-src 'self';
-  connect-src 'self' ${supabaseUrl} ${supabaseUrl.replace(/^http/, "ws")};
+  connect-src 'self' ${supabaseUrl} ${supabaseUrl.replace(/^http/, "ws")} https://production.plaid.com https://sandbox.plaid.com;
+  frame-src https://cdn.plaid.com;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
