@@ -206,8 +206,17 @@ new migration (see the review note above). CSV uploads are capped in
   Vault via `plaid_store_item` / `plaid_access_token` (service_role only);
   the `delete_plaid_secret` trigger removes the secret whenever a
   `plaid_items` row goes. Pure mapping logic is in `mapping.ts`, unit-tested
-  from `lib/__tests__/plaid-mapping.test.ts`. UI is behind
-  `NEXT_PUBLIC_PLAID_ENABLED` (Preview/local only). Transactions dedupe on
+  from `lib/__tests__/plaid-mapping.test.ts`. Access is per-user via the
+  `plaid_access` table (`0030`; clients read-only, grant by SQL) — the UI
+  and the function's `link_token`/`exchange` both check it. OAuth returns
+  land on `/accounts?oauth_state_id=…` and resume from localStorage;
+  allowed return URLs come from the `PLAID_REDIRECT_URIS` secret. Transactions dedupe on
   `(household_id, date, description, amount, plaid_transaction_id)`
   NULLS NOT DISTINCT — CSV upserts must name all five columns.
+- Retention: `private.run_retention()` via pg_cron nightly (`0030`) — invites
+  30 days, audit_log 1 year, runs with `candid.skip_audit`.
+- Ops docs: `docs/runbook.md`, `docs/plaid-security-questionnaire.md`,
+  `docs/legal/privacy-policy-draft.md` (draft — the live /privacy page still
+  says Candid never connects to banks; replace it before Plaid goes beyond
+  testers). `scripts/test-restore.sh` rehearses a backup restore.
 - Production plan + status: `docs/production-plan.md`.

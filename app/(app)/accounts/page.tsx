@@ -12,26 +12,24 @@ import { TotalsBarChart } from "@/components/charts/totals-bar-chart";
 import type { GoalLine, GoalSeries } from "@/components/charts/balance-history-chart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Sandbox-only until Plaid production access: set in .env.local / Vercel Preview, not Production.
-const PLAID_ENABLED = process.env.NEXT_PUBLIC_PLAID_ENABLED === "true";
 
 export default async function AccountsPage() {
   const supabase = await createClient();
 
-  const [{ data: accounts }, { data: history }, { data: goals }, { data: plaidItems }, { data: newestTxn }] = await Promise.all([
+  const [{ data: accounts }, { data: history }, { data: goals }, { data: plaidAccess }, { data: plaidItems }, { data: newestTxn }] = await Promise.all([
     supabase.from("accounts").select("id, name, type, balance, as_of_date, bank_format, is_liability, plaid_account_id").order("id"),
     supabase.from("account_balance_history").select("account_id, balance, as_of_date"),
     supabase
       .from("goals")
       .select("*")
       .eq("scope_type", "account"),
-    PLAID_ENABLED
-      ? supabase.from("plaid_items").select("id, institution_name, status, last_synced_at, import_from").order("created_at")
-      : Promise.resolve({ data: [] }),
-    PLAID_ENABLED
-      ? supabase.from("transactions").select("date").order("date", { ascending: false }).limit(1).maybeSingle()
-      : Promise.resolve({ data: null }),
+    // Bank connections are per-user while Plaid access is limited (0030).
+    supabase.from("plaid_access").select("user_id").maybeSingle(),
+    supabase.from("plaid_items").select("id, institution_name, status, last_synced_at, import_from").order("created_at"),
+    supabase.from("transactions").select("date").order("date", { ascending: false }).limit(1).maybeSingle(),
   ]);
+  const canConnectBanks = !!plaidAccess;
+  const showBankConnections = canConnectBanks || (plaidItems ?? []).length > 0;
 
   const defaultImportFrom = plaidImportFromDefault(newestTxn?.date ?? null);
 
@@ -98,14 +96,19 @@ export default async function AccountsPage() {
         </CardContent>
       </Card>
 
-      {PLAID_ENABLED && (
+      {showBankConnections && (
         <Card>
           <CardHeader>
             <CardTitle>Connected banks</CardTitle>
-            <CardDescription>Sandbox — test banks only.</CardDescription>
+            <CardDescription>Import balances and transactions automatically through Plaid.</CardDescription>
           </CardHeader>
           <CardContent>
-            <PlaidConnections items={plaidItems ?? []} accounts={accountList} defaultImportFrom={defaultImportFrom} />
+            <PlaidConnections
+              items={plaidItems ?? []}
+              accounts={accountList}
+              defaultImportFrom={defaultImportFrom}
+              canConnect={canConnectBanks}
+            />
           </CardContent>
         </Card>
       )}

@@ -33,13 +33,13 @@ Status as of 2026-11-03. `[x]` done, `[~]` partly done, `[ ]` not started.
 ## Phase 4 — Data and scalability
 - [ ] Indexes + EXPLAIN on a realistic dataset
 - [ ] Household RLS helper per-row cost
-- [~] Backups: nightly encrypted dump (14 days, GitHub artifacts). Free plan has no PITR. Test restore not done; no off-GitHub copy.
+- [~] Backups: nightly encrypted dump (14 days, GitHub artifacts). Free plan has no PITR. `scripts/test-restore.sh` written — run it once; no off-GitHub copy.
 - [ ] Download-your-data export
-- [~] Retention: raw CSVs are never stored. Still to do: purge expired invites and old `audit_log` rows.
+- [x] Retention: raw CSVs never stored; nightly pg_cron purge of invites (30 days) and audit_log (1 year) — `0030`
 
 ## Phase 5 — Legal and compliance
-- [ ] Final /privacy and /terms text (counsel)
-- [ ] Subprocessor list
+- [~] Final /privacy and /terms text — privacy draft with Plaid section at `docs/legal/privacy-policy-draft.md`, needs counsel
+- [~] Subprocessor list — in the privacy draft
 - [ ] School DPA template
 - [ ] Employment/IP check before any school deal
 - [ ] FERPA review before any student account
@@ -48,7 +48,7 @@ Status as of 2026-11-03. `[x]` done, `[~]` partly done, `[ ]` not started.
 - [ ] Staging environment (separate Supabase + Plaid sandbox)
 - [ ] Transactional email via Resend/Postmark (also lifts Supabase's email rate limit)
 - [ ] Vercel Pro before charging anyone
-- [ ] Runbook: rollback, restore, key rotation
+- [x] Runbook: rollback, restore, key rotation, incident response — `docs/runbook.md`
 - [ ] Stripe — only if the paid tier is happening
 
 ## Phase 7 — Plaid
@@ -65,4 +65,5 @@ Status as of 2026-11-03. `[x]` done, `[~]` partly done, `[ ]` not started.
 - [~] Sandbox tests: unit + DB tests done; click-through with `user_good` and re-auth case pending
 - [x] Item revoked at Plaid on disconnect and before account deletion
 - [x] Consent screen
-- [ ] Production access + Plaid security review
+- [~] OAuth return (resume Link on `/accounts?oauth_state_id`) + per-user access (`plaid_access`)
+- [ ] Production access + Plaid security review — answers prefilled in `docs/plaid-security-questionnaire.md`

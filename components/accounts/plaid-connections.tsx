@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -46,6 +46,7 @@ declare global {
     Plaid?: {
       create: (config: {
         token: string;
+        receivedRedirectUri?: string;
         onSuccess: (publicToken: string, meta: PlaidSuccessMeta) => void;
         onExit: (err: unknown) => void;
       }) => PlaidHandler;
@@ -64,12 +65,34 @@ function loadPlaidLink(): Promise<NonNullable<Window["Plaid"]>> {
   });
 }
 
+// OAuth banks (Chase, Wells Fargo, …) send the user to the bank's site and
+// back to /accounts?oauth_state_id=… — a full page load. Link has to be
+// re-opened with the same token, so remember what we were doing.
+const OAUTH_KEY = "candid.plaid.pending";
+type Pending = { token: string; mode: "connect"; importFrom: string } | { token: string; mode: "reconnect"; itemId: string };
+
+function savePending(p: Pending) {
+  try {
+    localStorage.setItem(OAUTH_KEY, JSON.stringify(p));
+  } catch {}
+}
+function takePending(): Pending | null {
+  try {
+    const raw = localStorage.getItem(OAUTH_KEY);
+    localStorage.removeItem(OAUTH_KEY);
+    return raw ? (JSON.parse(raw) as Pending) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Resolves with Link's public token + metadata, or null if the user closed it. */
-async function openLink(token: string): Promise<{ publicToken: string; meta: PlaidSuccessMeta } | null> {
+async function openLink(token: string, receivedRedirectUri?: string): Promise<{ publicToken: string; meta: PlaidSuccessMeta } | null> {
   const Plaid = await loadPlaidLink();
   return new Promise((resolve) => {
     const handler = Plaid.create({
       token,
+      receivedRedirectUri,
       onSuccess: (publicToken, meta) => {
         handler.destroy();
         resolve({ publicToken, meta });
@@ -105,10 +128,13 @@ export function PlaidConnections({
   items,
   accounts,
   defaultImportFrom,
+  canConnect,
 }: {
   items: PlaidItem[];
   accounts: { id: number; name: string; plaid_account_id: string | null }[];
   defaultImportFrom: string;
+  /** false once access is revoked: existing connections stay manageable. */
+  canConnect: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -145,21 +171,52 @@ export function PlaidConnections({
     setMapping({ itemId, institution, options });
   }
 
+  const redirectUri = () => `${window.location.origin}/accounts`;
+
+  async function finishConnect(result: { publicToken: string; meta: PlaidSuccessMeta }, from: string) {
+    const institution = result.meta.institution?.name ?? "Bank";
+    const res = await callPlaid<{ item_id: string; accounts: PlaidAccountOption[] }>({
+      action: "exchange",
+      public_token: result.publicToken,
+      institution_name: institution,
+      import_from: from,
+    });
+    router.refresh();
+    startMapping(res.item_id, institution, res.accounts);
+  }
+
+  async function finishReconnect(itemId: string) {
+    await callPlaid({ action: "reconnected", item_id: itemId });
+    toast.success("Reconnected.");
+    router.refresh();
+  }
+
+  // Returning from an OAuth bank: resume the Link session we started.
+  const resumed = useRef(false);
+  useEffect(() => {
+    if (resumed.current || !new URLSearchParams(window.location.search).has("oauth_state_id")) return;
+    resumed.current = true;
+    const pending = takePending();
+    const returnedFrom = window.location.href;
+    router.replace("/accounts");
+    if (!pending) return;
+    run(async () => {
+      const result = await openLink(pending.token, returnedFrom);
+      if (!result) return;
+      if (pending.mode === "connect") await finishConnect(result, pending.importFrom);
+      else await finishReconnect(pending.itemId);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on the redirect back
+  }, []);
+
   function connect() {
     setConsentOpen(false);
     run(async () => {
-      const { link_token } = await callPlaid<{ link_token: string }>({ action: "link_token" });
+      const { link_token } = await callPlaid<{ link_token: string }>({ action: "link_token", redirect_uri: redirectUri() });
+      savePending({ token: link_token, mode: "connect", importFrom });
       const result = await openLink(link_token);
-      if (!result) return;
-      const institution = result.meta.institution?.name ?? "Bank";
-      const res = await callPlaid<{ item_id: string; accounts: PlaidAccountOption[] }>({
-        action: "exchange",
-        public_token: result.publicToken,
-        institution_name: institution,
-        import_from: importFrom,
-      });
-      router.refresh();
-      startMapping(res.item_id, institution, res.accounts);
+      takePending();
+      if (result) await finishConnect(result, importFrom);
     });
   }
 
@@ -198,12 +255,15 @@ export function PlaidConnections({
 
   function reconnect(item: PlaidItem) {
     run(async () => {
-      const { link_token } = await callPlaid<{ link_token: string }>({ action: "link_token", item_id: item.id });
+      const { link_token } = await callPlaid<{ link_token: string }>({
+        action: "link_token",
+        item_id: item.id,
+        redirect_uri: redirectUri(),
+      });
+      savePending({ token: link_token, mode: "reconnect", itemId: item.id });
       const result = await openLink(link_token);
-      if (!result) return;
-      await callPlaid({ action: "reconnected", item_id: item.id });
-      toast.success("Reconnected.");
-      router.refresh();
+      takePending();
+      if (result) await finishReconnect(item.id);
     });
   }
 
@@ -253,11 +313,13 @@ export function PlaidConnections({
         </ul>
       )}
 
-      <div>
-        <Button onClick={() => setConsentOpen(true)} disabled={pending}>
-          Connect a bank
-        </Button>
-      </div>
+      {canConnect && (
+        <div>
+          <Button onClick={() => setConsentOpen(true)} disabled={pending}>
+            Connect a bank
+          </Button>
+        </div>
+      )}
 
       {/* Consent: what's pulled, where it's stored, how to stop. */}
       <Dialog open={consentOpen} onOpenChange={setConsentOpen}>

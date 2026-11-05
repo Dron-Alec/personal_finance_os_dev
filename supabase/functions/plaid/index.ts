@@ -3,7 +3,9 @@
 // caller's JWT (and aal2) themselves, the webhook checks Plaid's signature.
 //
 // Secrets (Supabase → Edge Functions → Secrets): PLAID_CLIENT_ID,
-// PLAID_SECRET, PLAID_ENV ("sandbox" | "production"). SUPABASE_URL and
+// PLAID_SECRET, PLAID_ENV ("sandbox" | "production"), and PLAID_REDIRECT_URIS
+// (comma-separated, each also registered in the Plaid dashboard; needed for
+// OAuth banks like Chase). SUPABASE_URL and
 // SUPABASE_SERVICE_ROLE_KEY are provided by the platform.
 
 import { createClient } from "npm:@supabase/supabase-js@2.119.0";
@@ -68,6 +70,15 @@ async function caller(req: Request) {
   if (!m) throw new HttpError(403, "No household.");
   return { userId: data.user.id, householdId: m.household_id as string };
 }
+
+// New connections are limited to users in plaid_access (0030). Managing an
+// existing connection — sync, reconnect, disconnect — is always allowed.
+async function requireAccess(userId: string) {
+  const { data } = await admin.from("plaid_access").select("user_id").eq("user_id", userId).maybeSingle();
+  if (!data) throw new HttpError(403, "Bank connections aren't enabled for your account yet.");
+}
+
+const REDIRECT_URIS = (Deno.env.get("PLAID_REDIRECT_URIS") ?? "").split(",").map((u) => u.trim()).filter(Boolean);
 
 async function ownItem(householdId: string, itemId: unknown) {
   if (typeof itemId !== "string") throw new HttpError(400, "Missing item_id.");
@@ -218,12 +229,17 @@ async function handleAction(req: Request) {
 
   switch (body.action) {
     case "link_token": {
+      if (!body.item_id) await requireAccess(userId);
       const base = {
         user: { client_user_id: userId },
         client_name: "Candid",
         language: "en",
         country_codes: ["US"],
         webhook: WEBHOOK_URL,
+        // Only allowlisted URIs: Plaid rejects the token if it isn't registered anyway.
+        ...(typeof body.redirect_uri === "string" && REDIRECT_URIS.includes(body.redirect_uri)
+          ? { redirect_uri: body.redirect_uri }
+          : {}),
       };
       const extra = body.item_id
         ? { access_token: await accessToken((await ownItem(householdId, body.item_id)).id) } // update mode (re-auth)
@@ -233,6 +249,7 @@ async function handleAction(req: Request) {
     }
 
     case "exchange": {
+      await requireAccess(userId);
       if (typeof body.public_token !== "string") throw new HttpError(400, "Missing public_token.");
       if (typeof body.import_from !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.import_from)) {
         throw new HttpError(400, "Invalid import_from date.");

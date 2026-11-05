@@ -46,8 +46,8 @@ Connect the repo to Vercel and set the app's environment variables. There's no s
 | `DATABASE_URL` | GitHub Actions secret | **No** | Session pooler URI used by the nightly backup |
 | `BACKUP_AGE_RECIPIENT` | GitHub Actions secret | Yes (public key) | Encrypts nightly backups |
 | `NEXT_PUBLIC_SENTRY_DSN` | Vercel | Yes | Turns on error reporting (unset = Sentry off) |
-| `NEXT_PUBLIC_PLAID_ENABLED` | `.env.local`, Vercel **Preview** only | Yes | `true` shows "Connected banks" on Accounts. Keep it off in Production until Plaid production access. |
 | `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV` | Supabase → Edge Functions → Secrets | **No** | Used only by the `plaid` Edge Function; never in Vercel or the browser |
+| `PLAID_REDIRECT_URIS` | Supabase → Edge Functions → Secrets | Yes | Comma-separated OAuth return URLs (`https://<domain>/accounts`, `http://localhost:3000/accounts`), each also registered in the Plaid dashboard |
 | `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | Vercel | **No** (token) | Optional: upload source maps so Sentry stack traces are readable |
 
 Every push to `main` deploys to production; every pull request gets a Vercel preview and runs CI (see [Testing](#testing)).
@@ -69,6 +69,7 @@ The Supabase Free plan keeps no restorable backups, so the repo makes its own:
 
 - **Nightly:** [.github/workflows/backup.yml](.github/workflows/backup.yml) runs [scripts/backup-db.sh](scripts/backup-db.sh) (`pg_dump` of `public`, `private`, `auth`), encrypts it with [age](https://age-encryption.org) to `BACKUP_AGE_RECIPIENT`, and keeps it as a workflow artifact for 14 days. A failed run emails you. Run it on demand from **Actions → Nightly DB backup → Run workflow**.
 - **On demand, locally:** `scripts/backup-db.sh` (prompts for the Session pooler URI; writes to `~/Documents/candid-backups/`).
+- **Test a restore:** `scripts/test-restore.sh [file]` loads a backup into a throwaway local Postgres and prints row counts.
 - **Restore:** download the artifact, `age -d -i <private key> file.dump.age > file.dump`, then `pg_restore`. Keep the age private key outside GitHub — without it the backups can't be decrypted.
 
 ## Importing Transactions
@@ -167,13 +168,16 @@ All `lib/actions/household-summaries.ts` functions (`getCombinedNetWorth`, `getC
 
 ## Bank connections (Plaid, sandbox)
 
-Behind `NEXT_PUBLIC_PLAID_ENABLED`. All Plaid calls run in one Supabase Edge Function, [supabase/functions/plaid/](supabase/functions/plaid/) — the Next app holds no Plaid secret and no service-role key.
+Per-user while access is limited: only users with a row in `plaid_access` see *Connected banks* (grant with the SQL at the top of [0030](supabase/migrations/0030_plaid_access_and_retention.sql)). All Plaid calls run in one Supabase Edge Function, [supabase/functions/plaid/](supabase/functions/plaid/) — the Next app holds no Plaid secret and no service-role key.
 
 - **Connect:** Accounts → Connected banks → *Connect a bank* shows a consent screen (what's pulled, how it's stored, how to stop) and an **Import transactions from** date, defaulting to the day after your newest transaction so CSV history isn't double-counted. Then Plaid Link, then *Choose accounts*: link each Plaid account to one you already track, add it as new, or skip it.
 - **Storage:** the access token is encrypted in Supabase Vault ([0028_plaid.sql](supabase/migrations/0028_plaid.sql)); `plaid_items` holds only the vault id, readable by the Edge Function alone. Disconnecting (or deleting your account) revokes the item at Plaid and deletes the secret.
 - **Sync:** `/transactions/sync` with a stored cursor — on connect, on *Sync now*, and when Plaid's webhook (`/functions/v1/plaid/webhook`, signature-verified) says there's new data. Pending transactions are skipped until they post. Your category rules win; otherwise Plaid's category is mapped onto Candid's ([mapping.ts](supabase/functions/plaid/mapping.ts)). Credit and loan balances are stored negative, like manual entries.
+- **OAuth banks** (Chase, Wells Fargo, …): the bank sends you back to `/accounts?oauth_state_id=…`; the page resumes the same Link session. The return URL must be listed in `PLAID_REDIRECT_URIS` and registered in the Plaid dashboard.
 - **Re-auth:** when Plaid reports `ITEM_LOGIN_REQUIRED` (or a pending expiration), the connection shows *Needs you to sign in again* with a **Reconnect** button (Plaid Link update mode).
 - **Sandbox test login:** `user_good` / `pass_good` at any test bank (e.g. First Platypus Bank). To test re-auth, call `/sandbox/item/reset_login` for the item.
+
+Operations: [docs/runbook.md](docs/runbook.md) (rollback, restore, key rotation, incidents). Plaid application prep: [docs/plaid-security-questionnaire.md](docs/plaid-security-questionnaire.md).
 
 ## Backfilling Missing Months
 

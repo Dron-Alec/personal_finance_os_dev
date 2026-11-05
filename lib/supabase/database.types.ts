@@ -439,6 +439,15 @@ export type Database = {
         }
         Relationships: []
       }
+      plaid_access: {
+        Row: {
+          granted_at: string
+          user_id: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       plaid_items: {
         // Column-level grants: clients may select only these. access_token_secret_id
         // and cursor exist but are readable by service_role (the Edge Function) only.
