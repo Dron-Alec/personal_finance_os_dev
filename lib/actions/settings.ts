@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentHouseholdId } from "@/lib/households";
 import { categorizeTransaction } from "@/lib/categorize";
+import { log } from "@/lib/log";
 import type { CategoryRule } from "@/lib/constants";
 
 export type SaveRulesResult = { error: string } | { error?: undefined };
@@ -101,7 +102,11 @@ export async function deleteOwnAccount() {
   // nw_snapshots, account_templates, goals, user_settings, and Supabase's
   // own session/identity/MFA tables). Irreversible.
   const { error } = await supabase.rpc("delete_own_account");
-  if (error) throw new Error(error.message);
+  if (error) {
+    log("error", "account.delete_failed", { code: error.code });
+    throw new Error(error.message);
+  }
+  log("info", "account.deleted", { user_id: user.id });
 
   // The auth.users row is gone, so this session is already invalid — sign
   // out explicitly anyway to clear cookies cleanly rather than leaving

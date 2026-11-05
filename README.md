@@ -45,12 +45,21 @@ Connect the repo to Vercel and set the app's environment variables. There's no s
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel + `.env.local` | Yes (RLS protects data) | Supabase anon key |
 | `DATABASE_URL` | GitHub Actions secret | **No** | Session pooler URI used by the nightly backup |
 | `BACKUP_AGE_RECIPIENT` | GitHub Actions secret | Yes (public key) | Encrypts nightly backups |
+| `NEXT_PUBLIC_SENTRY_DSN` | Vercel | Yes | Turns on error reporting (unset = Sentry off) |
+| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | Vercel | **No** (token) | Optional: upload source maps so Sentry stack traces are readable |
 
 Every push to `main` deploys to production; every pull request gets a Vercel preview and runs CI (see [Testing](#testing)).
 
 ## Data
 
 All data lives in your Supabase project's Postgres database, scoped per-household via Row Level Security. Uploaded CSVs are parsed in memory and never stored. Financial columns aren't separately encrypted beyond Supabase's at-rest encryption — see [docs/decisions/0001-column-encryption.md](docs/decisions/0001-column-encryption.md) for why.
+
+### Monitoring
+
+- **Errors → Sentry** (`@sentry/nextjs`, config in [lib/sentry.ts](lib/sentry.ts)): client, server, and server-action errors, sent through the same-origin `/monitoring` tunnel. Errors only — no tracing, no session replay — and request bodies, cookies, headers, and query strings are stripped before sending. Off until `NEXT_PUBLIC_SENTRY_DSN` is set.
+- **Logs:** `log(level, event, fields)` in [lib/log.ts](lib/log.ts) writes one JSON line per event to Vercel's runtime logs; `warn`/`error` also go to Sentry with the fields as tags. Events: `import.completed`, `import.failed`, `parse.no_rows` (a statement that parsed to nothing — usually a bank changing its export), `parse.failed`, `custom_format.created`, `auth.signout_everywhere`, `account.deleted`. Fields are ids, counts, and format names only — never transaction data. Login/MFA happen in the browser against Supabase Auth, so those events live in Supabase → Logs → Auth.
+- **Error pages:** [app/(app)/error.tsx](app/(app)/error.tsx) (in-app, keeps the nav), [app/global-error.tsx](app/global-error.tsx), [app/not-found.tsx](app/not-found.tsx).
+- **Uptime:** `GET /api/health` returns 200 when the app can reach Supabase Auth, 503 otherwise — point an uptime monitor at it.
 
 ### Backups
 

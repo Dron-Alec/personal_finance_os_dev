@@ -7,6 +7,7 @@ import { getCurrentHouseholdId } from "@/lib/households";
 import { DEFAULT_CATEGORY_RULES, type CategoryRule } from "@/lib/constants";
 import { extractHeaderSample, readCsvFiles } from "@/lib/csv-parsing";
 import { categorizeTransaction } from "@/lib/categorize";
+import { log } from "@/lib/log";
 import { applyMapping } from "@/lib/import/apply-mapping";
 import type { ColumnMapping } from "@/lib/import/csv-header-matcher";
 
@@ -88,6 +89,7 @@ export async function confirmCustomFormatAndImport(
   }
 
   if (rows.length === 0) {
+    log("warn", "parse.no_rows", { format: "custom:new", custom: true, files: read.texts.length });
     return { error: "No transactions found using the confirmed mapping — double-check the columns above." };
   }
 
@@ -120,6 +122,7 @@ export async function confirmCustomFormatAndImport(
     };
   }
   if (formatError) return { error: formatError.message };
+  log("info", "custom_format.created", { amount_type: parsedMapping.data.amountType });
 
   const { data: inserted, error } = await supabase
     .from("transactions")
@@ -128,7 +131,16 @@ export async function confirmCustomFormatAndImport(
       ignoreDuplicates: true,
     })
     .select("id");
-  if (error) return { error: error.message };
+  if (error) {
+    log("error", "import.failed", { format: "custom", code: error.code });
+    return { error: error.message };
+  }
+  log("info", "import.completed", {
+    format: "custom",
+    files: read.texts.length,
+    parsed: rows.length,
+    inserted: inserted?.length ?? 0,
+  });
 
   revalidatePath("/data-entry");
   revalidatePath("/spending");

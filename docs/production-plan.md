@@ -16,11 +16,11 @@ Status as of 2026-11-03. `[x]` done, `[~]` partly done, `[ ]` not started.
 - [ ] GitHub: Dependabot alerts, secret scanning + push protection, required checks on `main` (repo settings)
 
 ## Phase 2 — Observability and reliability
-- [ ] Sentry (client + server), no request bodies
-- [ ] Structured JSON logs for imports, parse failures, auth events
-- [ ] Parse-failure alerts per bank format (incl. "parsed 0 rows")
-- [ ] Error boundaries + user-facing error page
-- [ ] Uptime monitoring
+- [~] Sentry (client + server), request data scrubbed — code done; needs a Sentry project + `NEXT_PUBLIC_SENTRY_DSN` in Vercel
+- [x] Structured JSON logs for imports, parse failures, auth events — `lib/log.ts` (login/MFA are client-side → Supabase Auth logs)
+- [~] Parse-failure alerts per bank format — `parse.no_rows` / `parse.failed` go to Sentry tagged by `format`; alert rule to create in Sentry
+- [x] Error boundaries + user-facing error pages
+- [~] Uptime monitoring — `/api/health` endpoint done; monitor to create (UptimeRobot / Better Stack)
 
 ## Phase 3 — Testing and CI
 - [x] GitHub Actions: lint, typecheck, tests, build on every PR

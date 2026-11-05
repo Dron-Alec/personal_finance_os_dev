@@ -179,4 +179,13 @@ new migration (see the review note above). CSV uploads are capped in
   on the `personal_finance_os_dev` repo (not the older `personal-finance-os`
   repo). The private key is Alec's, kept outside GitHub. A restore has not
   been tested yet.
+- **Monitoring:** Sentry via `instrumentation.ts` / `instrumentation-client.ts`
+  / `lib/sentry.ts` (errors only, request data scrubbed, off without
+  `NEXT_PUBLIC_SENTRY_DSN`). In Sentry v11, `withSentryConfig` imports from
+  `@sentry/nextjs/config`. Error-page props in Next 16 are
+  `{ error: unknown, retry }` — not `reset`. Server-side events go through
+  `log()` in `lib/log.ts` (never put descriptions/amounts/emails in fields).
+  `/monitoring` (Sentry tunnel) and `/api/health` are excluded from the
+  `proxy.ts` matcher; any future public endpoint (e.g. a Plaid webhook)
+  needs the same.
 - Production plan + status: `docs/production-plan.md`.

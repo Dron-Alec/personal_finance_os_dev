@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const isDev = process.env.NODE_ENV === "development";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
 // No-nonce CSP per node_modules/next/dist/docs/01-app/02-guides/content-security-policy.md.
 // connect-src adds Supabase: the browser client talks to it directly for auth/MFA.
+// Sentry needs no entry: events go through the same-origin /monitoring tunnel.
 const csp = `
   default-src 'self';
   script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
@@ -37,4 +39,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Source maps upload only when SENTRY_AUTH_TOKEN (+ SENTRY_ORG,
+// SENTRY_PROJECT) are set in Vercel; without them the build just skips it.
+export default withSentryConfig(nextConfig, {
+  tunnelRoute: "/monitoring", // keep in sync with the proxy.ts matcher exclusion
+  silent: !process.env.CI,
+  telemetry: false,
+});

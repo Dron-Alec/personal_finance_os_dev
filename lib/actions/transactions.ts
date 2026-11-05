@@ -7,6 +7,7 @@ import { getCurrentHouseholdId } from "@/lib/households";
 import { BANK_FORMATS, DEFAULT_CATEGORY_RULES, type BankFormat, type CategoryRule } from "@/lib/constants";
 import { extractHeaderSample, parseCsvForBank, readCsvFiles } from "@/lib/csv-parsing";
 import { categorizeTransaction } from "@/lib/categorize";
+import { log } from "@/lib/log";
 import { matchHeaders, type ColumnMapping } from "@/lib/import/csv-header-matcher";
 import { applyMapping } from "@/lib/import/apply-mapping";
 
@@ -90,9 +91,15 @@ export async function importCsv(
 
   const rows: { household_id: string; date: string; description: string; amount: number; bank: string; category: string }[] = [];
   for (const text of read.texts) {
-    const parsed = customMapping
-      ? applyMapping(customMapping, extractHeaderSample(text).rows)
-      : parseCsvForBank(bankFormat as BankFormat, text);
+    let parsed: { date: string; description: string; amount: number }[];
+    try {
+      parsed = customMapping
+        ? applyMapping(customMapping, extractHeaderSample(text).rows)
+        : parseCsvForBank(bankFormat as BankFormat, text);
+    } catch (e) {
+      log("error", "parse.failed", { format: bankFormat, error: e instanceof Error ? e.name : "unknown" });
+      return { error: "Couldn't read that file — check the statement format matches it." };
+    }
     for (const tx of parsed) {
       rows.push({
         household_id: householdId,
@@ -106,6 +113,9 @@ export async function importCsv(
   }
 
   if (rows.length === 0) {
+    // The silent-failure case: a real statement that parses to nothing
+    // usually means the bank changed its export. Alert on this per format.
+    log("warn", "parse.no_rows", { format: bankFormat, custom: !!customMapping, files: read.texts.length });
     // Tier 1 (the selected bank format's fixed column names) found nothing.
     // Fall through to Tier 2: deterministic header/fuzzy matching against
     // the first file's actual columns, purely to surface a suggestion —
@@ -138,7 +148,16 @@ export async function importCsv(
       ignoreDuplicates: true,
     })
     .select("id");
-  if (error) return { error: error.message };
+  if (error) {
+    log("error", "import.failed", { format: bankFormat, code: error.code });
+    return { error: error.message };
+  }
+  log("info", "import.completed", {
+    format: bankFormat,
+    files: read.texts.length,
+    parsed: rows.length,
+    inserted: inserted?.length ?? 0,
+  });
 
   revalidatePath("/data-entry");
   revalidatePath("/spending");
