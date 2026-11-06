@@ -8,7 +8,7 @@ import { buildCombinedNetWorthChartData, type HouseholdNetWorthBundle } from "@/
 
 export type HouseholdCategoryTotal = { category: string; amount: number };
 
-// Same row shape MonthlyStackedBarChart already consumes on the individual
+// Same row shape MonthlyCategoryChart already consumes on the individual
 // Spending page (lib/spending-utils.ts buildMonthlyCategoryData) — a month
 // plus one numeric field per category, so the same chart component works
 // unmodified here.

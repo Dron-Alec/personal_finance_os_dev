@@ -12,7 +12,7 @@ import { formatCurrency, formatSignedCurrency } from "@/lib/format";
 import { SpendingFilters } from "@/components/spending/spending-filters";
 import { TransactionsTable } from "@/components/spending/transactions-table";
 import { BreakdownPieChart } from "@/components/charts/breakdown-pie-chart";
-import { MonthlyStackedBarChart } from "@/components/charts/monthly-stacked-bar-chart";
+import { MonthlyCategoryChart } from "@/components/charts/monthly-category-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function SpendingPage({
@@ -110,7 +110,7 @@ export default async function SpendingPage({
               <CardTitle>Monthly by Category</CardTitle>
             </CardHeader>
             <CardContent>
-              <MonthlyStackedBarChart data={monthlyRows} series={monthlySeries} />
+              <MonthlyCategoryChart data={monthlyRows} series={monthlySeries} />
             </CardContent>
           </Card>
         </div>

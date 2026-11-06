@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { getCategoryColor } from "@/lib/chart-colors";
 import { BreakdownPieChart } from "@/components/charts/breakdown-pie-chart";
-import { MonthlyStackedBarChart, type MonthlySeries } from "@/components/charts/monthly-stacked-bar-chart";
+import { MonthlyCategoryChart, type MonthlySeries } from "@/components/charts/monthly-category-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ViewToggle, type CombinedView } from "@/components/combined/view-toggle";
 import type { CombinedSpendingSummary, HouseholdCategoryTotal, MonthlyCategoryRow } from "@/lib/actions/household-summaries";
@@ -21,7 +21,7 @@ function SpendingCharts({ categoryTotals, monthly }: { categoryTotals: Household
       </div>
       <div className="flex flex-col gap-2">
         <p className="text-sm font-medium text-muted-foreground">Monthly by Category</p>
-        <MonthlyStackedBarChart data={monthly} series={seriesFor(categoryTotals)} />
+        <MonthlyCategoryChart data={monthly} series={seriesFor(categoryTotals)} />
       </div>
     </div>
   );
