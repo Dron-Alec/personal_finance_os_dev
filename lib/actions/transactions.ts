@@ -164,13 +164,24 @@ export async function importCsv(
   return { imported: inserted?.length ?? 0, duplicates: rows.length - (inserted?.length ?? 0) };
 }
 
-export async function recategorizeByDescription(description: string, newCategory: string) {
+const recategorizeSchema = z.object({
+  ids: z.array(z.number().int().positive()).min(1).max(20000),
+  category: z.string().trim().min(1).max(100),
+});
+
+export async function recategorizeTransactions(ids: number[], newCategory: string) {
+  const parsed = recategorizeSchema.safeParse({ ids, category: newCategory });
+  if (!parsed.success) throw new Error("Pick at least one transaction and a category.");
+
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("transactions")
-    .update({ category: newCategory })
-    .eq("description", description);
-  if (error) throw new Error(error.message);
+  // Chunked: the id list goes in the request URL, which has a length cap.
+  for (let i = 0; i < parsed.data.ids.length; i += 500) {
+    const { error } = await supabase
+      .from("transactions")
+      .update({ category: parsed.data.category })
+      .in("id", parsed.data.ids.slice(i, i + 500));
+    if (error) throw new Error(error.message);
+  }
 
   revalidatePath("/spending");
   revalidatePath("/data-entry");

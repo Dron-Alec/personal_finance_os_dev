@@ -9,13 +9,11 @@ import {
 } from "@/lib/spending-utils";
 import { DELTA_BAD_COLOR, DELTA_GOOD_COLOR, getCategoryColor } from "@/lib/chart-colors";
 import { formatCurrency, formatSignedCurrency } from "@/lib/format";
-import { CategorySwatch } from "@/components/category-swatch";
 import { SpendingFilters } from "@/components/spending/spending-filters";
-import { RecategorizePanel } from "@/components/spending/recategorize-panel";
+import { TransactionsTable } from "@/components/spending/transactions-table";
 import { BreakdownPieChart } from "@/components/charts/breakdown-pie-chart";
 import { MonthlyStackedBarChart } from "@/components/charts/monthly-stacked-bar-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default async function SpendingPage({
   searchParams,
@@ -64,7 +62,6 @@ export default async function SpendingPage({
 
   const ruleCategories = (ruleRow?.rules ?? DEFAULT_CATEGORY_RULES).map((r) => r.category);
   const recategorizeCategories = Array.from(new Set([...ruleCategories, "Other"])).sort();
-  const descriptions = Array.from(new Set(all.map((t) => t.description))).sort();
 
   const sortedTable = [...filtered].sort((a, b) => (a.date < b.date ? 1 : -1));
 
@@ -124,41 +121,7 @@ export default async function SpendingPage({
           <CardTitle>Transactions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="max-h-96 overflow-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Bank</TableHead>
-                  <TableHead>Category</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedTable.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell>{t.date}</TableCell>
-                    <TableCell className="max-w-64 truncate">{t.description}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(t.amount, 2)}</TableCell>
-                    <TableCell className="text-muted-foreground">{t.bank}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      <CategorySwatch category={t.category} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Re-categorize Transactions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <RecategorizePanel descriptions={descriptions} categories={recategorizeCategories} />
+          <TransactionsTable rows={sortedTable} categories={recategorizeCategories} />
         </CardContent>
       </Card>
     </div>
