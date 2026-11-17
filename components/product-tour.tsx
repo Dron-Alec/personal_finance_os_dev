@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { HelpCircleIcon, XIcon } from "lucide-react";
-import { TOUR_STEPS } from "@/lib/tour-steps";
+import { START_TOUR_EVENT, TOURS, startTour, tourSeenKey, type TourName, type TourStep } from "@/lib/tour-steps";
 import { useHasMounted } from "@/lib/use-has-mounted";
 import { Button } from "@/components/ui/button";
 
@@ -66,16 +66,31 @@ function useTargetRect(target: string | undefined): Rect | null {
   );
 }
 
-export function ProductTour({ userId }: { userId: string }) {
-  const seenKey = `pfos-tour-seen:${userId}`;
+// autoStart=false holds off the first-visit auto-run (e.g. while the
+// "Complete your profile" prompt is open). Other components start a
+// specific tour with startTour() from lib/tour-steps.
+export function ProductTour({ userId, autoStart = true }: { userId: string; autoStart?: boolean }) {
+  const seenKey = tourSeenKey(userId);
   const hasSeen = useHasSeenTour(seenKey);
   const [manuallyActive, setManuallyActive] = useState(false);
+  const [tourName, setTourName] = useState<TourName>("main");
   const [stepIndex, setStepIndex] = useState(0);
-  const active = manuallyActive || !hasSeen;
+  const active = manuallyActive || (autoStart && !hasSeen);
+  const steps = TOURS[tourName];
 
   const pathname = usePathname();
   const router = useRouter();
-  const step = active ? TOUR_STEPS[stepIndex] : undefined;
+  const step = active ? steps[stepIndex] : undefined;
+
+  useEffect(() => {
+    function onStart(e: Event) {
+      setTourName((e as CustomEvent<TourName>).detail);
+      setStepIndex(0);
+      setManuallyActive(true);
+    }
+    window.addEventListener(START_TOUR_EVENT, onStart);
+    return () => window.removeEventListener(START_TOUR_EVENT, onStart);
+  }, []);
 
   // Tracks the pathname our own step-navigation last pushed to, set
   // optimistically at push time (below) — so when the real pathname catches
@@ -93,7 +108,7 @@ export function ProductTour({ userId }: { userId: string }) {
     router.push(step.path);
     trackedPathname.current = step.path;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- step.path is what we act on; keying on `step` itself (not stepIndex) would also re-fire on unrelated array identity changes, which TOUR_STEPS never has (module-level constant).
-  }, [stepIndex, active]);
+  }, [stepIndex, active, tourName]);
 
   // Manual-navigation watcher: if pathname changes to something other than
   // what our own push (above) set it to, the user navigated away — dismiss
@@ -137,19 +152,23 @@ export function ProductTour({ userId }: { userId: string }) {
     return () => mo.disconnect();
   }, [step]);
 
+  // Dismissing any tour (main or spending) counts as "seen", so finishing
+  // the spending walkthrough doesn't immediately auto-launch the main tour.
   function dismiss() {
     window.localStorage.setItem(seenKey, "1");
     setManuallyActive(false);
+    setTourName("main");
     setStepIndex(0);
   }
 
   function start() {
+    setTourName("main");
     setStepIndex(0);
     setManuallyActive(true);
   }
 
   function next() {
-    if (stepIndex + 1 >= TOUR_STEPS.length) {
+    if (stepIndex + 1 >= steps.length) {
       dismiss();
     } else {
       setStepIndex((i) => i + 1);
@@ -166,7 +185,7 @@ export function ProductTour({ userId }: { userId: string }) {
         <HelpCircleIcon className="size-4" />
         Help
       </Button>
-      {active && step && <TourOverlay step={step} rect={rect} index={stepIndex} onNext={next} onBack={back} onSkip={dismiss} />}
+      {active && step && <TourOverlay step={step} rect={rect} index={stepIndex} total={steps.length} onNext={next} onBack={back} onSkip={dismiss} />}
     </>
   );
 }
@@ -175,13 +194,15 @@ function TourOverlay({
   step,
   rect,
   index,
+  total,
   onNext,
   onBack,
   onSkip,
 }: {
-  step: (typeof TOUR_STEPS)[number];
+  step: TourStep;
   rect: Rect | null;
   index: number;
+  total: number;
   onNext: () => void;
   onBack: () => void;
   onSkip: () => void;
@@ -238,7 +259,7 @@ function TourOverlay({
         <p className="text-sm text-muted-foreground">{step.body}</p>
         <div className="flex items-center justify-between gap-2 pt-1">
           <span className="text-xs text-muted-foreground">
-            Step {index + 1} of {TOUR_STEPS.length}
+            Step {index + 1} of {total}
           </span>
           <div className="flex gap-2">
             {index > 0 && (
@@ -247,12 +268,20 @@ function TourOverlay({
               </Button>
             )}
             <Button type="button" size="sm" onClick={onNext}>
-              {index + 1 >= TOUR_STEPS.length ? "Done" : "Next"}
+              {index + 1 >= total ? "Done" : "Next"}
             </Button>
           </div>
         </div>
       </div>
     </div>,
     document.body,
+  );
+}
+
+export function StartTourButton({ tour, children }: { tour: TourName; children: React.ReactNode }) {
+  return (
+    <Button type="button" size="sm" className="w-fit" onClick={() => startTour(tour)}>
+      {children}
+    </Button>
   );
 }

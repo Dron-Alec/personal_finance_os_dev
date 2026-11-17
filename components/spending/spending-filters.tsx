@@ -99,7 +99,7 @@ export function SpendingFilters({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-4">
+      <div className="flex flex-wrap gap-4" data-tour="spending-filters">
         <SearchInput />
         <div className="flex flex-col gap-1.5">
           <Label>Month</Label>
@@ -151,7 +151,7 @@ export function SpendingFilters({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5" data-tour="spending-exclude">
         <Label>Exclude categories (click to toggle out of totals &amp; charts)</Label>
         <div className="flex flex-wrap gap-1.5">
           {categories.map((c) => {

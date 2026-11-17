@@ -147,3 +147,92 @@ export const TOUR_STEPS: TourStep[] = [
     body: "Every account requires TOTP two-factor sign-in, and your data is private by design (Row Level Security) — no other user can ever see it. Switch light/dark/system from the header, and reopen this tour anytime with the ? icon.",
   },
 ];
+
+// In-depth walkthrough of the Spending tab, offered from "Complete your
+// profile" and the Learn page. Steps whose target isn't on screen (e.g. no
+// transactions yet) fall back to a centered card, so the copy has to make
+// sense either way.
+export const SPENDING_TOUR_STEPS: TourStep[] = [
+  {
+    id: "sp-intro",
+    path: "/data-entry",
+    title: "Where is your money going?",
+    body: "This walkthrough covers the whole loop: getting your statements in, reading the Spending tab, fixing categories so the numbers are right, and making it a monthly habit. It takes about two minutes. Skip anytime with ✕.",
+  },
+  {
+    id: "sp-upload",
+    path: "/data-entry",
+    target: "csv-upload",
+    title: "Step 1: Get your transactions in",
+    body: "Download a CSV from each bank and card you spend from (log into the website, look under Statements or Activity, and choose CSV, not PDF). Pick the matching format here and upload. Grab every account you spend from, because a card you leave out makes the totals look better than they are. Overlapping uploads are deduplicated, so re-uploading is safe.",
+  },
+  {
+    id: "sp-filters",
+    path: "/spending",
+    target: "spending-filters",
+    title: "Step 2: Narrow it down",
+    body: "Search matches transaction descriptions (try \"amazon\" or \"uber\"). Month, Category, and Account narrow everything below them: totals, both charts, and the table. A good first pass is the most recent full month with Category set to All, to see the whole picture.",
+  },
+  {
+    id: "sp-exclude",
+    path: "/spending",
+    target: "spending-exclude",
+    title: "Exclude what you can't change",
+    body: "Click a category to drop it from the totals and charts, and click again to bring it back. Excluding fixed costs like Rent or Insurance leaves your discretionary spending, which is where the cuts are. Internal Transfer and Income are never counted as spending, so moving money between your own accounts doesn't inflate the numbers.",
+  },
+  {
+    id: "sp-totals",
+    path: "/spending",
+    target: "spending-totals",
+    title: "Step 3: Read the totals",
+    body: "Total Spending is money out, and Total Income / Credits is money in (paychecks, refunds, interest). Net Cash Flow is the difference. Green means you kept money that month, and red means you spent more than came in. If it's red most months, start with the biggest slice in the pie next.",
+  },
+  {
+    id: "sp-pie",
+    path: "/spending",
+    target: "spending-pie",
+    title: "Spending by Category",
+    body: "Each slice is a category's share of the filtered spending. Look at the two or three biggest slices. Cutting 10% from a big category usually beats cutting a small one entirely. A big \"Other\" slice means categories need fixing (Step 4).",
+  },
+  {
+    id: "sp-monthly",
+    path: "/spending",
+    target: "spending-monthly",
+    title: "Month over month",
+    body: "Stacked bars show each month's total split by category. Switch to the line view to follow single categories over time, and click a legend entry to hide one. A category that keeps rising, like dining or subscriptions, is often spending creeping up without anyone deciding it should.",
+  },
+  {
+    id: "sp-table",
+    path: "/spending",
+    target: "spending-table",
+    title: "Step 4: Fix categories",
+    body: "Every transaction that matches your filters, newest first. If something is in the wrong bucket, check its box (or search for a merchant, then use the header checkbox to select all of them), pick a category, and hit Apply. This changes those transactions only.",
+  },
+  {
+    id: "sp-rules",
+    path: "/settings",
+    target: "category-rules",
+    title: "Make the fix permanent",
+    body: "To make a fix stick for future uploads, add the merchant's keyword to a category here. The first matching keyword wins, case-insensitive. Saving re-categorizes everything you've already imported too.",
+  },
+  {
+    id: "sp-habit",
+    path: "/spending",
+    title: "Step 5: Make it a habit",
+    body: "Once a month, upload new statements, scan the pie for surprises, fix any \"Other\" transactions, and check Net Cash Flow. Fifteen minutes of actually looking is what changes spending. You can restart this walkthrough from the Learn tab.",
+  },
+];
+
+export const TOURS = { main: TOUR_STEPS, spending: SPENDING_TOUR_STEPS } as const;
+export type TourName = keyof typeof TOURS;
+
+// Per-account "has dismissed the tour" flag in localStorage (see ProductTour).
+export function tourSeenKey(userId: string) {
+  return `pfos-tour-seen:${userId}`;
+}
+
+export const START_TOUR_EVENT = "candid:start-tour";
+
+export function startTour(name: TourName) {
+  window.dispatchEvent(new CustomEvent<TourName>(START_TOUR_EVENT, { detail: name }));
+}

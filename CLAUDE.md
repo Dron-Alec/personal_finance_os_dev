@@ -76,7 +76,10 @@ fully migrated the same way; only ad hoc pieces have been moved over so far.
   type, not freeform text.
 
 ## Supabase
-- Live project: **Personal_Finances_OS** (ref `ycvxvdtigwkjpwgoiqhz`, region
+- **Dev/prod split — see `docs/environments.md`.** Work happens on the `dev`
+  branch against the `Candid-dev` project. Prod (below) only changes when
+  Alec promotes `dev → main`. Don't apply migrations to prod unless he asks.
+- Prod (live) project: **Personal_Finances_OS** (ref `ycvxvdtigwkjpwgoiqhz`, region
   ca-central-1) — separate from the old Streamlit-era `AlecHaleyFinances` /
   `lfqezqcymxcdseqcsbfh` project, which is no longer used.
 - Schema lives in `supabase/migrations/`, all applied in order to the live

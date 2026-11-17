@@ -69,7 +69,7 @@ export default async function SpendingPage({
     <div className="flex flex-col gap-6" data-tour="spending-page">
       <SpendingFilters months={months} categories={dataCategories} banks={banks} />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3" data-tour="spending-totals">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-normal text-muted-foreground">Total Spending</CardTitle>
@@ -97,7 +97,7 @@ export default async function SpendingPage({
 
       {spendingRows.length > 0 && (
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
+          <Card data-tour="spending-pie">
             <CardHeader>
               <CardTitle>Spending by Category</CardTitle>
             </CardHeader>
@@ -105,7 +105,7 @@ export default async function SpendingPage({
               <BreakdownPieChart data={pieData} />
             </CardContent>
           </Card>
-          <Card>
+          <Card data-tour="spending-monthly">
             <CardHeader>
               <CardTitle>Monthly by Category</CardTitle>
             </CardHeader>
@@ -116,7 +116,7 @@ export default async function SpendingPage({
         </div>
       )}
 
-      <Card>
+      <Card data-tour="spending-table">
         <CardHeader>
           <CardTitle>Transactions</CardTitle>
         </CardHeader>

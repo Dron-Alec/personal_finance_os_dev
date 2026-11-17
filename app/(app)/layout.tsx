@@ -3,6 +3,7 @@ import { signOut } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ProductTour } from "@/components/product-tour";
+import { CompleteProfileDialog } from "@/components/profile/complete-profile-dialog";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentHouseholdId } from "@/lib/households";
 
@@ -11,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/net-worth", label: "📈 Net Worth" },
   { href: "/spending", label: "💸 Spending" },
   { href: "/accounts", label: "🏦 Accounts" },
+  { href: "/learn", label: "📚 Learn" },
   { href: "/settings", label: "⚙️ Settings" },
 ];
 
@@ -41,7 +43,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const showCombined = await hasActiveHouseholdLink();
+  const [showCombined, { data: settings }] = await Promise.all([
+    hasActiveHouseholdLink(),
+    supabase.from("user_settings").select("profile_prompted_at").maybeSingle(),
+  ]);
+  const showProfilePrompt = !!user && !!settings && !settings.profile_prompted_at;
   const navItems = showCombined ? [...NAV_ITEMS, COMBINED_NAV_ITEM] : NAV_ITEMS;
 
   return (
@@ -51,7 +57,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div />
           <h1 className="justify-self-center text-xl font-semibold">Candid 💰</h1>
           <div className="flex items-center justify-self-end gap-2">
-            {user && <ProductTour userId={user.id} />}
+            {user && <ProductTour userId={user.id} autoStart={!showProfilePrompt} />}
             <ThemeToggle />
             <form action={signOut}>
               <Button type="submit" variant="outline" size="sm">
@@ -73,6 +79,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </nav>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
+      {user && showProfilePrompt && <CompleteProfileDialog userId={user.id} />}
     </div>
   );
 }
