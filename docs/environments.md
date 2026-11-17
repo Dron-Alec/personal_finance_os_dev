@@ -4,7 +4,7 @@
 |---|---|---|
 | Git branch | `main` | `dev` |
 | Vercel | Production deployment (current URL) | `dev` branch domain (e.g. `candid-dev.vercel.app`) |
-| Supabase | `Personal_Finances_OS` (`ycvxvdtigwkjpwgoiqhz`), real data | `Candid-dev` (new project, ca-central-1), test data only |
+| Supabase | `Personal_Finances_OS` (`ycvxvdtigwkjpwgoiqhz`), real data | `Candid-dev` (`fsymcrjlpfzsetulutbx`, us-east-2), test data only |
 | MCP server (`.mcp.json`) | `supabase-prod` | `supabase` (the default) |
 
 Prod is the existing live project, which already has all the real data, so
@@ -38,7 +38,8 @@ URL and use fake or sandbox data. Never copy prod data into dev.
 ### Supabase
 1. Pause the old Streamlit project (`lfqezqcymxcdseqcsbfh`) to free a Free-plan
    slot. Its data, including Haley's unmigrated rows, is kept while paused.
-2. Create project `Candid-dev`, region ca-central-1.
+2. Create project `Candid-dev` (done: `fsymcrjlpfzsetulutbx`, us-east-2, which
+   is fine because it holds no real data).
 3. Auth → Sign In / Providers: match prod (email + password, confirm email).
    Auth → Multi-Factor: enable TOTP.
    Auth → URL Configuration: Site URL = the dev Vercel URL, plus
@@ -49,10 +50,10 @@ URL and use fake or sandbox data. Never copy prod data into dev.
    sandbox secrets, and grant yourself `plaid_access`.
 
 ### Vercel (same project)
-1. Settings → Environment Variables: set `NEXT_PUBLIC_SUPABASE_URL` and
-   `NEXT_PUBLIC_SUPABASE_ANON_KEY` to the **dev** values for **Preview**,
-   scoped to the `dev` branch. Production keeps the prod values. Check that no
-   Preview variable without a branch scope still points at prod.
+1. Settings → Environment Variables (project level, not team "Shared"): set
+   `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to the
+   **dev** values for **Development** and **Preview**. Only **Production**
+   holds the prod values, so a preview build can never reach prod data.
 2. Settings → Domains: add `candid-dev.vercel.app` (or similar) and assign it
    to the `dev` git branch.
 3. Optionally leave `NEXT_PUBLIC_SENTRY_DSN` unset on dev, or set
